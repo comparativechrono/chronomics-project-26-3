@@ -1,0 +1,64 @@
+<!-- id: h-s07 | title: Stage 7 · What is in the block? | group: The project | stage: 7 | tab: yes | tabtitle: Stage 7 – What is in the block? | summary: Give the block variants their rsIDs and consequences (VEP); find the enhancer the variants sit in; the SCN5A–SCN10A regulatory neighbourhood | keys: stage 7 annotation vep variant effect predictor consequence rsid regulatory enhancer intron intergenic scn10a enhancer van den boogaard cardiac conduction block content ensembl -->
+<h1>Stage 7 · What is in the block?</h1>
+<div class="stage-meta"><span class="when">Weeks 7–8</span><span>about 5 hours</span><span class="stage-progress"></span></div>
+<p class="lede">You have a ~50 kb block. What is actually in it – which other variants, and what do they touch? Annotate the block with Ensembl's Variant Effect Predictor, find the regulatory element the two variants sit in, and meet the neighbourhood that makes this locus famous for the heart.</p>
+<div class="skills"><b>You will learn</b><ul>
+<li>the Variant Effect Predictor (VEP): consequences and regulatory overlap</li>
+<li>to annotate a set of variants and read the result</li>
+<li>what an enhancer is, and how DNA far from a gene can control it</li>
+<li>the <i>SCN5A</i>–<i>SCN10A</i> regulatory neighbourhood</li>
+</ul></div>
+
+<h2>1. The consequence of the two variants</h2>
+<p>Ask Ensembl's VEP what each variant does. In the terminal with the REST API (or use the <b>Databases</b> tab, Ensembl → Variant/VEP):</p>
+<pre class="code" data-run="term"><code>cd ~/project
+for rs in rs41310749 rs41310239; do
+  echo "== $rs"
+  curl -s "https://rest.ensembl.org/vep/human/id/$rs?content-type=application/json" \
+    | jq -r '.[0] | .most_severe_consequence, (.regulatory_feature_consequences // [] | .[].biotype)'
+done</code></pre>
+<div class="callout check"><div class="co-t">Check</div><p>Both are <code>upstream_gene_variant</code> of <i>SCN5A</i> (the promoter). rs41310749 also overlaps a regulatory feature of biotype <b>enhancer</b> – Ensembl's regulatory build marks the spot as an enhancer. So the variant does not change a protein; it sits in a switch.</p></div>
+
+<h2>2. Annotate the whole block</h2>
+<p>Take the block SNPs you found in stage 5 (r² ≥ 0.8), give them rsIDs, and see what kinds of thing they are. First list the block positions and name them from dbSNP:</p>
+<pre class="code" data-run="term"><code>bcftools view -H -v snps -r chr3:38631501-38682101 results/hprc_split.vcf.gz 2>/dev/null | head -1 &gt;/dev/null
+# name the block variants from dbSNP and keep those in your LD list
+bcftools annotate -a /data/examples/scn5a/reference/dbsnp157_scn5a_2Mb.vcf.gz -c ID \
+  -r chr3:38631501-38682101 /data/examples/scn5a/1000g/1kgp_scn5a_2Mb.vcf.gz 2>/dev/null \
+  | bcftools view -H -v snps | awk '$3 ~ /^rs/ {print $2, $3, $4"/"$5}' | head -30</code></pre>
+<p>In R you can join these names to your <code>ld_eur.csv</code> (match on position) and list the block's rsIDs. Then look a few up in the VEP card. You will find the block is mostly <b>intron</b> variants of <i>SCN5A</i> and <b>intergenic</b> variants in the gap towards <i>SCN10A</i> – none of them change a protein.</p>
+<div class="callout check"><div class="co-t">Check</div><p>The block's variants are regulatory/intronic/intergenic, not coding. The haplotype is a <b>regulatory</b> haplotype: whatever it does, it does by changing how genes are switched, not by changing a protein's sequence.</p></div>
+
+<h2>3. The neighbourhood: <i>SCN5A</i> and <i>SCN10A</i></h2>
+<div class="callout science"><div class="co-t">An enhancer in the next gene</div>
+<p>Your block reaches from inside <i>SCN5A</i>, across its promoter, into the DNA before <i>SCN10A</i>. This gap is not empty: it holds <b>enhancers</b> – switches that control <i>SCN5A</i> from a distance. The best known is inside <i>SCN10A</i> itself: van den Boogaard et al. (2012) showed that a common variant there changes a T-box binding site and tunes <i>SCN5A</i> expression and the heart's conduction. The whole <i>SCN5A</i>–<i>SCN10A</i> region is a cluster of heart-conduction switches, and your promoter haplotype is one part of it. Stage 10 will show that the strongest disease signal at this locus is up at the <i>SCN10A</i> end – so keep asking whether your promoter haplotype matters on its own, or only because it rides along with that larger signal.</p></div>
+<p>See the layout in the genome browser: <button class="do" type="button" data-igv="chr3:38,620,000-38,700,000">the block, the promoter and the gap to SCN10A</button></p>
+<div class="task"><div class="task-t">Your turn</div><p>Using the gene annotation and your block edges, write down exactly which features the block covers: which part of <i>SCN5A</i>, how much of the intergenic gap, and how far it stops short of <i>SCN10A</i>. Does the block contain the <i>SCN10A</i> enhancer, or stop before it?</p>
+<details class="hint"><summary>Show a hint</summary><p>The block ends near chr3:38,682,101; <i>SCN10A</i> starts at 38,696,802. So the block stops about 15 kb short of <i>SCN10A</i>. The famous <i>SCN10A</i> enhancer is inside <i>SCN10A</i> – beyond your block.</p></details></div>
+
+<div class="callout think"><div class="co-t">Think</div>
+<ul>
+<li>If none of the block's variants change a protein, how could the haplotype affect the heart at all?</li>
+<li>Which of the block's variants would you bet on as the "causal" one – the one that actually does something? How would you ever tell them apart, when they all travel together? (This is the hard problem of a haplotype, and a good discussion point.)</li>
+</ul></div>
+
+<div class="callout log"><div class="co-t">For your logbook</div>
+<ul>
+<li>The consequence of each variant, and the enhancer overlap of rs41310749.</li>
+<li>What kinds of variant the block contains, and which genes/regions it covers.</li>
+<li>Your note on the <i>SCN5A</i>–<i>SCN10A</i> regulatory neighbourhood and where your block sits in it.</li>
+</ul></div>
+
+<h2>Going further</h2>
+<ul>
+<li>Look at the region on the UCSC browser (Databases → UCSC) on hg38: are there ENCODE "candidate cis-regulatory elements" (cCREs) or heart ATAC/ChIP tracks over your block?</li>
+<li>Run VEP with the <code>--regulatory</code> information for several block variants and see which overlap enhancers or promoters.</li>
+<li>Read van den Boogaard et al. (2012): how did they show the <i>SCN10A</i> variant controls <i>SCN5A</i>? Could the same logic be applied to your promoter haplotype?</li>
+</ul>
+<ul class="checklist">
+<li data-check="s7-vep">I found the consequence of both variants and the enhancer overlap.</li>
+<li data-check="s7-block">I annotated the block and saw it is regulatory, not coding.</li>
+<li data-check="s7-neighbourhood">I worked out which features the block covers and where it stops.</li>
+<li data-check="s7-log">I wrote this stage up in my logbook.</li>
+</ul>
+<div class="stage-nav"><button type="button" data-goto="h-s06"><small>Back</small>← Stage 6 · The block across populations</button><button class="next" type="button" data-goto="h-s08"><small>Next</small>Stage 8 · Do the variants change a motif? →</button></div>

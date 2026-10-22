@@ -1,0 +1,69 @@
+<!-- id: h-s10 | title: Stage 10 · The haplotype in the biobank | group: The project | stage: 10 | tab: yes | tabtitle: Stage 10 – The haplotype in the biobank | summary: Look the tag variants up in a Brugada-syndrome GWAS and in GTEx expression; the loss-of-function mechanism; why the signal points to a haplotype, not a variant | keys: stage 10 biobank gwas brugada syndrome barc 2022 summary statistics p value odds ratio beta effect allele gtex eqtl expression scn5a scn10a nes whole blood heart conditional analysis mechanism loss of function -->
+<h1>Stage 10 · The haplotype in the biobank</h1>
+<div class="stage-meta"><span class="when">Weeks 10–11</span><span>about 7 hours</span><span class="stage-progress"></span></div>
+<p class="lede">Does the haplotype do anything to the heart? Two biobank-scale datasets can answer: a genome-wide study of a heart-rhythm disease, and a catalogue of how variants change gene expression. Look up your variants in both, and put the pieces together into a mechanism – carefully.</p>
+<div class="skills"><b>You will learn</b><ul>
+<li>to read GWAS summary statistics: effect allele, effect size, <i>P</i>-value</li>
+<li>to look a variant up in a disease study and judge its signal in context</li>
+<li>eQTLs: genetic effects on gene expression (GTEx)</li>
+<li>to assemble evidence into a mechanism, and to say what is still open</li>
+</ul></div>
+
+<h2>1. The haplotype and Brugada syndrome</h2>
+<p><i>SCN5A</i> loss of function causes <b>Brugada syndrome</b>. Barc et al. (2022) ran a genome-wide association study of it; you have the <i>SCN5A</i>–<i>SCN10A</i> locus of their results. Look up your tags:</p>
+<pre class="code" data-run="term"><code>cd ~/project
+head -1 /data/examples/scn5a/gwas/brugada_Barc2022_SCN5A_SCN10A.tsv | tr '\t' '\n' | head -8 | cat -n
+grep -wE "rs41310749|rs41310239" /data/examples/scn5a/gwas/brugada_Barc2022_SCN5A_SCN10A.tsv \
+  | awk -F'\t' '{print $2, "pos="$4, $5"/"$6, "beta="$7, "p="$20}'</code></pre>
+<div class="callout check"><div class="co-t">Check</div><p>Both are <b>genome-wide significant</b>: rs41310749 has effect (beta) ≈ <b>0.287</b> for its A allele, <i>P</i> ≈ <b>1.1 × 10<sup>−10</sup></b>; rs41310239 is almost identical. A beta of 0.287 on the log-odds scale is an odds ratio of e<sup>0.287</sup> ≈ <b>1.33</b> – each copy of the derived allele raises Brugada risk by about a third. The <b>derived</b> haplotype you have tracked all project is a <b>risk</b> haplotype.</p></div>
+
+<h2>2. But whose signal is it?</h2>
+<p>How strong is your haplotype compared with the rest of the locus? Find the most significant variant in the file:</p>
+<pre class="code" data-run="term"><code>awk -F'\t' 'NR>1 &amp;&amp; $20!="NA" {print $20, $4, $2}' /data/examples/scn5a/gwas/brugada_Barc2022_SCN5A_SCN10A.tsv \
+  | sort -g | head -5</code></pre>
+<div class="callout check"><div class="co-t">Check</div><p>The strongest signal is far stronger – <i>P</i> around 10<sup>−150</sup>, up near <b>chr3:38,71x,xxx</b>, at the <i>SCN10A</i> end of the locus (the famous conduction enhancer region of stage 7). Your promoter haplotype, at <i>P</i> ≈ 10<sup>−10</sup>, is a real but <b>minor</b> part of a vast association signal.</p></div>
+<div class="callout science"><div class="co-t">A signal points to a haplotype, not a letter</div>
+<p>A GWAS hit marks a stretch of DNA, not a single culprit: every variant in LD with the true cause lights up together. Your promoter haplotype is associated with Brugada syndrome – but so is a much larger region around it, led from the <i>SCN10A</i> end. To know whether the <i>promoter</i> haplotype matters <b>on its own</b>, you would have to hold the stronger signal fixed and ask whether the promoter still adds anything – a <b>conditional analysis</b>, which needs the individual-level data, not just these summary numbers. That is the honest limit of what you can conclude here, and a key point for your discussion.</p></div>
+
+<h2>3. Does the haplotype change how much <i>SCN5A</i> is made?</h2>
+<p>A promoter's job is to set a gene's output, so ask directly: is the variant an <b>eQTL</b> for <i>SCN5A</i>? GTEx has the answer. Query it live for the heart:</p>
+<pre class="code" data-run="term"><code>curl -s "https://gtexportal.org/api/v2/association/dyneqtl?gencodeId=ENSG00000183873.15&amp;variantId=chr3_38651526_G_A_b38&amp;tissueSiteDetailId=Heart_Atrial_Appendage&amp;datasetId=gtex_v8" \
+  | jq '{tissue:"Heart_Atrial_Appendage", nes, pValue}'</code></pre>
+<p>And the pre-computed table across all tissues is in the data:</p>
+<pre class="code" data-run="r"><code>e &lt;- read.delim("/data/examples/scn5a/gtex/GTEx_v8_SCN5A_rs41310749.tsv")
+e &lt;- e[e$gene == "SCN5A", ]
+e[order(e$p_value), ][1:6, c("tissue", "NES_altA", "p_value")]</code></pre>
+<div class="callout check"><div class="co-t">Check</div><p>rs41310749 is a significant eQTL for <i>SCN5A</i>: the <b>derived A allele lowers <i>SCN5A</i> expression</b> – strongly in whole blood (NES ≈ <b>−0.35</b>, <i>P</i> ≈ 10<sup>−10</sup>) and fibroblasts, and in the same direction in the <b>heart</b> (atrial appendage NES ≈ −0.10, <i>P</i> ≈ 0.03; left ventricle similar but weaker). It does not affect <i>SCN10A</i>.</p></div>
+
+<h2>4. Put it together</h2>
+<div class="callout science"><div class="co-t">A coherent thread</div>
+<p>The derived promoter haplotype <b>lowers <i>SCN5A</i> expression</b> (eQTL) → less Na<sub>v</sub>1.5 → the kind of reduced sodium current that causes <b>Brugada syndrome</b> – and the haplotype is indeed associated with <b>higher Brugada risk</b> (GWAS). Three independent lines – a motif that is weakened (stage 8), lower expression, higher disease risk – point the same way. That is a satisfying, testable story. But remember the caveats: the eQTL is clearest outside the heart, the disease signal is dominated by the <i>SCN10A</i> end, and none of this proves the promoter haplotype acts on its own. A good scientist holds the mechanism and its limits in mind at once.</p></div>
+<div class="task"><div class="task-t">Your turn</div><p>Does the direction fit? In stage 8 the derived allele <i>weakened</i> a clock/bHLH motif (an activator-type site). Would weakening an activator raise or lower expression? Does that match the eQTL direction you just found? Write the chain out, step by step, in your logbook, and mark each link as "shown", "suggested" or "assumed".</p></div>
+
+<div class="callout think"><div class="co-t">Think</div>
+<ul>
+<li>The group's interest is the <i>circadian</i> control of the heart. Nothing here tests time-of-day directly. How could you? (What data would you need – and does the clock-motif result give a prediction to test?)</li>
+<li>Brugada events often happen at night. If the derived allele lowers <i>SCN5A</i> and disturbs its daily rhythm, what might that predict about <i>when</i> carriers are most at risk?</li>
+</ul></div>
+
+<div class="callout log"><div class="co-t">For your logbook</div>
+<ul>
+<li>The Brugada result for both tags (effect, OR, <i>P</i>), and how it compares with the locus peak.</li>
+<li>The eQTL result and its direction, in blood and in heart.</li>
+<li>Your step-by-step mechanism, with each link labelled by how sure you are.</li>
+</ul></div>
+
+<h2>Going further</h2>
+<ul>
+<li>Look the tags up in GWAS of normal-range ECG traits (PR interval, QRS duration, heart rate) if you can find summary statistics – the <i>SCN5A</i>–<i>SCN10A</i> locus is famous for these. Does the haplotype affect conduction in healthy people, not just in disease?</li>
+<li>In GTEx, plot the <i>SCN5A</i> eQTL effect across all 49 tissues (a bar chart) and mark the heart tissues. Where is the effect strongest, and why might that be?</li>
+<li>Read how a conditional / fine-mapping analysis works, and write a short plan for how you <i>would</i> test the promoter haplotype's independent effect given the right data.</li>
+</ul>
+<ul class="checklist">
+<li data-check="s10-brugada">I looked up both tags in the Brugada GWAS and found them genome-wide significant.</li>
+<li data-check="s10-context">I compared them with the locus peak and understood the haplotype caveat.</li>
+<li data-check="s10-eqtl">I found that the derived allele lowers <i>SCN5A</i> expression.</li>
+<li data-check="s10-mechanism">I wrote out the mechanism with its evidence and its limits.</li>
+<li data-check="s10-log">I wrote this stage up in my logbook.</li>
+</ul>
+<div class="stage-nav"><button type="button" data-goto="h-s09"><small>Back</small>← Stage 9 · Evolution</button><button class="next" type="button" data-goto="h-s11"><small>Next</small>Stage 11 · Write it up →</button></div>

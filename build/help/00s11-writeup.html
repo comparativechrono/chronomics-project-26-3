@@ -1,0 +1,54 @@
+<!-- id: h-s11 | title: Stage 11 · Write it up | group: The project | stage: 11 | tab: yes | tabtitle: Stage 11 – Write it up | summary: Turn your logbook, figures and notebooks into a report; make the analysis reproducible with scripts and a run_all | keys: stage 11 write up report dissertation figures methods results discussion reproducible run_all scripts citations abstract introduction -->
+<h1>Stage 11 · Write it up</h1>
+<div class="stage-meta"><span class="when">Weeks 11–12 (and throughout)</span><span>ongoing</span><span class="stage-progress"></span></div>
+<p class="lede">A result nobody can read or repeat is not finished. This stage turns your year of work into a report and a reproducible analysis. Start it early – the best reports are written alongside the work, not bolted on at the end.</p>
+<div class="skills"><b>You will learn</b><ul>
+<li>to structure a scientific report: abstract, introduction, methods, results, discussion</li>
+<li>to make figures that stand on their own</li>
+<li>to write methods with versions, so others can repeat you</li>
+<li>to turn notebooks into scripts and a single <code>run_all.sh</code></li>
+</ul></div>
+
+<h2>1. The shape of the report</h2>
+<ul>
+<li><b>Abstract</b> – the question, what you did, the main numbers, what they mean, in a paragraph.</li>
+<li><b>Introduction</b> – the clock and the heart, <i>SCN5A</i>, the two variants, and the gap you set out to fill (the <a href="#h-science">science page</a> and <a href="#h-reading">reading list</a> are your starting points). End with your aims.</li>
+<li><b>Methods</b> – the data (with versions and accessions) and what you did to them, in enough detail that someone could repeat it. Name every program and its version (<button class="do" type="button" data-term="samtools --version | head -1; bcftools --version | head -1; R --version | head -1; kalign --version 2>&1 | head -1">print your tool versions</button>), and cite them.</li>
+<li><b>Results</b> – your findings, in order, each with a figure or table: the two-SNP haplotype, the ~50 kb block, its population spread, the motif changes, the evolutionary history, and the biobank associations. Report numbers with their uncertainty.</li>
+<li><b>Discussion</b> – what it means, what is still open (the conditional-analysis caveat from stage 10, the PWM caveats from stage 8), and what you would do next.</li>
+<li><b>References</b> – everything you cited; <b>data and code availability</b> – how someone could get your scripts and the public data.</li>
+</ul>
+
+<h2>2. Your figures</h2>
+<p>You have made a figure in most stages. Collect them from <code>~/project/figures</code> and judge each one as if you had never seen the analysis: does the caption alone tell the reader what it shows and what to conclude? The core set:</p>
+<ul>
+<li>the two-SNP haplotype (stage 4) and the LD block (stage 5);</li>
+<li>the block across populations (stage 6);</li>
+<li>the motif changes at the two variants (stage 8);</li>
+<li>the primate alignment / conservation (stage 9);</li>
+<li>the Brugada regional plot and the <i>SCN5A</i> eQTL (stage 10).</li>
+</ul>
+<p>Redraw any that are rough. A good figure is worth a page of text.</p>
+
+<h2>3. Make it reproducible</h2>
+<p>Turn each stage's notebook into a clean script, and write one <code>run_all.sh</code> that runs them in order and remakes every result and figure from the data in <code>/data/examples/scn5a</code>. Keep your scripts in <code>~/project/scripts</code>. Test it in a fresh session (<b>Start afresh</b>, then run it): if it rebuilds your results, your analysis is reproducible – a real achievement, and increasingly expected of published work. (See <a href="#h-scripts">Scripts and run_all</a>.)</p>
+<div class="callout check"><div class="co-t">Check</div><p><code>bash run_all.sh</code> in an empty home folder rebuilds your <code>results/</code> and <code>figures/</code> without error, using only the project data. Nothing depends on a file you cannot remake.</p></div>
+
+<h2>4. Honesty and credit</h2>
+<ul>
+<li><b>Say what is uncertain.</b> The strongest reports are clear about limits: the promoter haplotype rides on a larger signal; the motif changes are predictions; the eQTL is clearest outside the heart. Naming these makes your real findings more, not less, credible.</li>
+<li><b>Cite</b> the data and the programs (<a href="#h-data">The project data</a> lists them; each tool's help page has its reference).</li>
+<li><b>Declare any AI use</b> – which tool, for what, and how you checked it.</li>
+<li><b>Keep your logbook</b> with the report: it is the evidence of how the work was done.</li>
+</ul>
+
+<div class="callout log"><div class="co-t">For your logbook</div>
+<ul>
+<li>A one-paragraph draft abstract – write it now, and rewrite it as the work changes.</li>
+<li>A list of your figures and what each shows.</li>
+<li>Three things you would do with another year.</li>
+</ul></div>
+
+<div class="callout science"><div class="co-t">What you have done</div>
+<p>You started with two letters in a promoter and, in a browser, described a haplotype nobody had mapped: its extent, its populations, the motifs it changes, its history, and its link to the heart – with real tools, on real public data, checking yourself at every step. That is research. Be proud of it, present it well, and talk to your supervisor about where it could go.</p></div>
+<div class="stage-nav"><button type="button" data-goto="h-s10"><small>Back</small>← Stage 10 · The haplotype in the biobank</button><button class="next" type="button" data-goto="h-home"><small>Done</small>Back to the start →</button></div>

@@ -1,0 +1,104 @@
+<!-- id: h-s08 | title: Stage 8 · Do the variants change a motif? | group: The project | stage: 8 | tab: yes | tabtitle: Stage 8 – Do the variants change a motif? | summary: Score the reference and alternate alleles against clock, bHLH and cardiac transcription-factor matrices (JASPAR) in R; the BMAL1/CLOCK loss and RXR gain at rs41310749 | keys: stage 8 motif transcription factor jaspar pwm position weight matrix log odds score reference alternate allele e-box bmal1 clock usf hes1 rxr nkx2-5 gata4 tbx5 park 2012 delta gain loss -->
+<h1>Stage 8 · Do the variants change a motif?</h1>
+<div class="stage-meta"><span class="when">Weeks 8–9</span><span>about 7 hours</span><span class="stage-progress"></span></div>
+<p class="lede">A regulatory variant works by changing a transcription factor's grip on the DNA. Which factors, and by how much? Score the reference and alternate alleles of each variant against a library of binding matrices – the clock proteins, their bHLH relatives, and the heart's own factors – and test, by a method of your own, Park et al.'s prediction that these variants change RXR and Hes1 sites.</p>
+<div class="skills"><b>You will learn</b><ul>
+<li>how a transcription factor's preference is written as a matrix (a PWM)</li>
+<li>to turn a count matrix into log-odds scores and scan a sequence</li>
+<li>to compare the reference and alternate alleles of a variant</li>
+<li>to read a motif gain or loss with a healthy dose of caution</li>
+</ul></div>
+
+<div class="callout science"><div class="co-t">From counts to a score</div>
+<p><b>JASPAR</b> stores, for each transcription factor, how often each base appears at each position of its binding site – a <b>position frequency matrix</b> (PFM). Turn each count into a <b>log-odds</b> score (how much more likely that base is here than by chance) and you have a <b>PWM</b>: slide it along a sequence, add up the scores, and the best-scoring window is the factor's likely binding site. Score the window with the reference base and again with the alternate: the difference says whether the variant strengthens or weakens the site. It is a prediction, not proof – but a good place to start.</p></div>
+
+<h2>1. The sequence around each variant</h2>
+<p>Pull 20 bases on each side of each variant from the reference:</p>
+<pre class="code" data-run="term"><code>cd ~/project
+samtools faidx /data/examples/scn5a/reference/GRCh38_chr3_SCN5A.fa.gz chr3:38651506-38651546 | grep -v "^&gt;" &gt; results/ctx_rs41310749.txt
+samtools faidx /data/examples/scn5a/reference/GRCh38_chr3_SCN5A.fa.gz chr3:38650517-38650557 | grep -v "^&gt;" &gt; results/ctx_rs41310239.txt
+cat results/ctx_rs41310749.txt results/ctx_rs41310239.txt</code></pre>
+<p>The middle (21st) base of each is the reference allele – G for rs41310749, A for rs41310239.</p>
+
+<h2>2. Read the matrices and score</h2>
+<div class="tryrow"><button class="do" type="button" data-stage-nb="r|stage08-motifs|Stage 8 – Motifs">Open my stage 8 notebook</button></div>
+<p>These functions read the JASPAR file, build a PWM, and score the best window of a sequence (on either strand):</p>
+<pre class="code" data-run="r"><code>read_jaspar &lt;- function(path) {
+  L &lt;- readLines(path); mats &lt;- list(); name &lt;- NULL; rows &lt;- list(); mid &lt;- NULL
+  for (ln in L) {
+    if (startsWith(ln, "&gt;")) {
+      if (!is.null(name)) mats[[mid]] &lt;- list(name = name, pfm = do.call(rbind, rows))
+      p &lt;- strsplit(sub("^&gt;", "", ln), "\t")[[1]]; mid &lt;- p[1]; name &lt;- p[2]; rows &lt;- list()
+    } else if (nchar(trimws(ln)) &gt; 0) {
+      rows[[length(rows) + 1]] &lt;- as.numeric(regmatches(ln, gregexpr("[0-9.]+", ln))[[1]])
+    }
+  }
+  if (!is.null(name)) mats[[mid]] &lt;- list(name = name, pfm = do.call(rbind, rows))
+  mats
+}
+pwm_lods &lt;- function(pfm, pseudo = 0.8, bg = 0.25)      # rows A,C,G,T; columns = positions
+  t(apply(pfm, 2, function(col) { tot &lt;- sum(col) + 4 * pseudo; log2(((col + pseudo) / tot) / bg) }))
+revcomp &lt;- function(s) { m &lt;- c(A="T",T="A",G="C",C="G",N="N"); paste(m[rev(strsplit(s,"")[[1]])], collapse="") }
+score_seq &lt;- function(lods, s) {
+  Lw &lt;- nrow(lods); idx &lt;- c(A=1,C=2,G=3,T=4); best &lt;- -1e9
+  for (seq in c(s, revcomp(s))) for (i in 1:(nchar(seq)-Lw+1)) {
+    chs &lt;- strsplit(substring(seq,i,i+Lw-1),"")[[1]]
+    if (!any(chs=="N")) { sc &lt;- sum(lods[cbind(1:Lw, idx[chs])]); if (sc&gt;best) best &lt;- sc }
+  }
+  best
+}
+mats &lt;- read_jaspar("/data/examples/scn5a/motifs/JASPAR2024_CORE_vertebrates_nr_pfms.txt")
+length(mats)</code></pre>
+<p>Now a function that scores a variant's reference and alternate allele against one matrix, in its own sequence context:</p>
+<pre class="code" data-run="r"><code>score_variant &lt;- function(ctx_file, ref, alt, matrix_id) {
+  flank &lt;- toupper(readLines(ctx_file)[1])               # 41 bases: 20 + allele + 20
+  left &lt;- substr(flank, 1, 20); right &lt;- substr(flank, 22, 41)
+  lods &lt;- pwm_lods(mats[[matrix_id]]$pfm); Lw &lt;- nrow(lods)
+  wl &lt;- substr(left, 21 - (Lw - 1), 20); wr &lt;- substr(right, 1, Lw - 1)   # window must overlap the variant
+  mx &lt;- sum(apply(lods, 1, max))                          # the best possible score
+  ref_s &lt;- score_seq(lods, paste0(wl, ref, wr)); alt_s &lt;- score_seq(lods, paste0(wl, alt, wr))
+  data.frame(TF = mats[[matrix_id]]$name, ref_rel = round(ref_s/mx, 3), alt_rel = round(alt_s/mx, 3),
+             delta = round(alt_s - ref_s, 2))
+}</code></pre>
+
+<h2>3. rs41310749: a clock motif lost, an RXR motif gained</h2>
+<p>Score the reference G and alternate A of rs41310749 against the clock proteins, a few of their bHLH relatives, and RXR:</p>
+<pre class="code" data-run="r"><code>tf &lt;- c(BMAL1="MA0603.2", CLOCK="MA0819.3", NPAS2="MA0626.2", USF1="MA0093.4", MAX="MA0058.4",
+        HES1="MA1099.3", RXRA="MA0512.2", NKX2_5="MA0063.3", GATA4="MA0482.3", TBX5="MA0807.1")
+do.call(rbind, lapply(tf, function(id) score_variant("~/project/results/ctx_rs41310749.txt", "G", "A", id)))</code></pre>
+<div class="callout check"><div class="co-t">Check</div><p>The reference G matches a <b>BMAL1</b> E-box-class motif well (relative score ≈ <b>0.63</b>), with weaker CLOCK/USF/MAX matches. The alternate A <b>weakens all of them</b> (BMAL1 drops to ≈ 0.17; CLOCK, USF, MAX fall further) – but <b>gains an RXR site</b> (delta ≈ <b>+8</b>, the largest change). Your own scoring reproduces Park et al.'s prediction that rs41310749 creates an RXR site – and adds that the allele it replaces looks like a clock bHLH/E-box motif.</p></div>
+
+<h2>4. rs41310239</h2>
+<pre class="code" data-run="r"><code>do.call(rbind, lapply(tf, function(id) score_variant("~/project/results/ctx_rs41310239.txt", "A", "G", id)))</code></pre>
+<div class="callout check"><div class="co-t">Check</div><p>The reference A supports <b>HES1</b> (a bHLH repressor, relative score ≈ 0.81) and <b>NKX2-5</b> (a cardiac factor); the alternate G weakens NKX2-5, GATA4 and others. Park et al. predicted a Hes1 site here – your scoring shows the reference already matches Hes1 strongly in this GC-rich stretch.</p></div>
+
+<div class="callout warn"><div class="co-t"><!--ICON:info-->How much to trust this</div>
+<p>PWM scores are predictions from sequence alone. A high score does not prove a factor binds, nor that binding matters in the heart. Treat these as <b>hypotheses to test</b> – against real binding data (ENCODE ChIP-seq), against the expression results of stage 10, and against experiments your supervisor might design. Say so plainly in your report.</p></div>
+
+<div class="callout think"><div class="co-t">Think</div>
+<ul>
+<li>rs41310749's derived allele trades a clock/E-box-class motif for a nuclear-receptor (RXR) one. If that is real, how might it change the <i>timing</i> of <i>SCN5A</i> expression through the day? (This is the group's central interest.)</li>
+<li>You found the derived allele <i>weakens</i> a clock motif. Is that consistent with the expression result you will get in stage 10 (does the derived allele raise or lower <i>SCN5A</i>)?</li>
+</ul></div>
+
+<div class="callout log"><div class="co-t">For your logbook</div>
+<ul>
+<li>The motif tables for both variants.</li>
+<li>In your own words: what the derived allele does to the clock and RXR motifs at rs41310749.</li>
+<li>Your honest caveats about PWM predictions.</li>
+</ul></div>
+
+<h2>Going further</h2>
+<ul>
+<li>Score <i>every</i> matrix in JASPAR (loop over <code>names(mats)</code>) and rank them by the size of the change. Do the biggest gains and losses match Park et al.'s RXR and Hes1?</li>
+<li>Score the three canonical E-boxes you found in stage 2: how strong a BMAL1/CLOCK site is each?</li>
+<li>Pull real binding data: in the UCSC card, look for ENCODE transcription-factor ChIP-seq peaks over the promoter. Do any cover your variants?</li>
+</ul>
+<ul class="checklist">
+<li data-check="s8-ctx">I pulled the sequence context around each variant.</li>
+<li data-check="s8-pwm">I read the JASPAR matrices and wrote the scoring functions.</li>
+<li data-check="s8-749">I scored rs41310749 and found the clock-motif loss and RXR gain.</li>
+<li data-check="s8-239">I scored rs41310239 (HES1 / NKX2-5).</li>
+<li data-check="s8-log">I wrote this stage up, with my caveats, in my logbook.</li>
+</ul>
+<div class="stage-nav"><button type="button" data-goto="h-s07"><small>Back</small>← Stage 7 · What is in the block?</button><button class="next" type="button" data-goto="h-s09"><small>Next</small>Stage 9 · Evolution →</button></div>

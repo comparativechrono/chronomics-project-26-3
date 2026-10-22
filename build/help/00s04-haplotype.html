@@ -1,0 +1,82 @@
+<!-- id: h-s04 | title: Stage 4 · The two-SNP haplotype | group: The project | stage: 4 | tab: yes | tabtitle: Stage 4 – The two-SNP haplotype | summary: Your first R notebook; read the genotype table, build the two-SNP haplotype, count it, and see that the two variants travel together | keys: stage 4 r notebook data frame read.delim table matrix haplotype two-snp frequency barplot crosstab allele frequency rs41310749 rs41310239 travel together -->
+<h1>Stage 4 · The two-SNP haplotype</h1>
+<div class="stage-meta"><span class="when">Week 4</span><span>about 5 hours</span><span class="stage-progress"></span></div>
+<p class="lede">Park et al. (2012) said the minor alleles of the two variants "travel together". Now you can see it for yourself, in 462 complete genomes. This is your first stage in <b>R</b>: you will read the table you made, build the haplotype of both variants, and count how often each combination occurs.</p>
+<div class="skills"><b>You will learn</b><ul>
+<li>the R notebook: cells, running code, saving figures</li>
+<li>data frames and matrices; reading a table with <code>read.delim</code></li>
+<li>allele frequencies; building a haplotype from two variants</li>
+<li>a cross-tabulation (<code>table</code>) and a bar chart</li>
+</ul></div>
+
+<h2>1. Open your stage 4 notebook</h2>
+<div class="tryrow"><button class="do" type="button" data-stage-nb="r|stage04-haplotype|Stage 4 – The two-SNP haplotype">Open my stage 4 notebook</button></div>
+<p>This makes an R notebook in <code>~/notebooks</code>. Add each code box below to it with <b>Add to notebook</b>, and run the cell with <kbd>Shift</kbd>+<kbd>Enter</kbd>. Write what you find in text cells as you go.</p>
+
+<h2>2. Read the table and name the haplotypes</h2>
+<p>The table has one row per variant and one column per haplotype, in the order of the samples (two haplotypes each). Read it, and build the haplotype names:</p>
+<pre class="code" data-run="r"><code>tv &lt;- read.delim("~/project/results/hprc_two_variants.tsv", header = FALSE, na.strings = ".")
+dim(tv)
+samples &lt;- readLines("~/project/results/hprc_samples_order.txt")
+hap_names &lt;- paste0(rep(samples, each = 2), "_hap", 1:2)
+length(hap_names)
+# the 4 label columns, then one column per haplotype
+colnames(tv) &lt;- c("pos", "rsid", "ref", "alt", hap_names)
+tv[, 1:8]</code></pre>
+<div class="callout check"><div class="co-t">Check</div><p><code>tv</code> has 2 rows and 466 columns; <code>hap_names</code> has <b>462</b> entries, like <code>HG00438_hap1</code>, <code>HG00438_hap2</code>, …</p></div>
+
+<h2>3. Pull out each variant as a row of 0s and 1s</h2>
+<pre class="code" data-run="r"><code>a &lt;- as.integer(tv[tv$rsid == "rs41310749", hap_names])   # 1 = the A allele
+b &lt;- as.integer(tv[tv$rsid == "rs41310239", hap_names])   # 1 = the G allele
+mean(a, na.rm = TRUE)      # frequency of rs41310749-A
+mean(b, na.rm = TRUE)      # frequency of rs41310239-G</code></pre>
+<div class="callout check"><div class="co-t">Check</div><p>rs41310749-A is on about <b>0.121</b> of the 462 haplotypes; rs41310239-G on about <b>0.093</b>.</p></div>
+
+<h2>4. Do they travel together?</h2>
+<p>Cross-tabulate the two variants: how many haplotypes carry each combination?</p>
+<pre class="code" data-run="r"><code>table(rs41310749_A = a, rs41310239_G = b)</code></pre>
+<div class="callout check"><div class="co-t">Check</div><p>Of 462 haplotypes: <b>403</b> carry neither minor allele, <b>40</b> carry <i>both</i>, 16 carry only rs41310749-A, and 3 carry only rs41310239-G. The two minor alleles are almost always together – just as Park et al. described. Nearly every rs41310239-G chromosome (40 of 43) also carries rs41310749-A.</p></div>
+<p>The <b>two-SNP haplotype</b> – both minor alleles – is a row of its own, 1 where a haplotype carries both:</p>
+<pre class="code" data-run="r"><code>both &lt;- as.integer(a == 1 &amp; b == 1)
+mean(both, na.rm = TRUE)         # frequency of the two-SNP haplotype
+sum(both, na.rm = TRUE)          # how many haplotypes carry it
+write.csv(data.frame(haplotype = hap_names, rs41310749_A = a, rs41310239_G = b, two_snp = both),
+          "~/project/results/hprc_haplotypes.csv", row.names = FALSE)</code></pre>
+<div class="callout check"><div class="co-t">Check</div><p>The two-SNP haplotype is on about <b>0.087</b> of haplotypes (40 of 462). You have just measured, in complete genomes, the haplotype Park et al. inferred from families.</p></div>
+
+<h2>5. A first figure</h2>
+<pre class="code" data-run="r"><code>png("~/project/figures/fig_two_snp.png", width = 1200, height = 800, res = 150)
+barplot(c(`rs41310749-A` = mean(a, na.rm = TRUE),
+          `rs41310239-G` = mean(b, na.rm = TRUE),
+          `both (haplotype)` = mean(both, na.rm = TRUE)) * 100,
+        ylab = "frequency (%)", col = c("grey70", "grey70", "#c2410c"),
+        main = "The two SCN5A promoter variants travel together (HPRC, 462 haplotypes)")
+dev.off()</code></pre>
+<p>Open the figure in the <b>Files</b> tab (<code>~/project/figures</code>).</p>
+
+<div class="callout think"><div class="co-t">Think</div>
+<ul>
+<li>16 haplotypes carry rs41310749-A without rs41310239-G, but only 3 carry rs41310239-G without rs41310749-A. What does that asymmetry suggest about which variant is older, or which arose on the other's background?</li>
+<li>You have 462 haplotypes. How precisely can you really estimate a frequency of 9%? (Stage 5 and 6 add many more genomes.)</li>
+</ul></div>
+
+<div class="callout log"><div class="co-t">For your logbook</div>
+<ul>
+<li>The frequency of each variant and of the two-SNP haplotype.</li>
+<li>The cross-tabulation, and what the asymmetry (16 vs 3) might mean.</li>
+<li>Your figure.</li>
+</ul></div>
+
+<h2>Going further</h2>
+<ul>
+<li>Join the sample table (<code>/data/examples/scn5a/hprc/hprc_samples.tsv</code>) and ask whether the haplotype's frequency differs between superpopulations even in these 231 people. (Stage 6 does this properly in the larger 1000 Genomes data.)</li>
+<li>The three haplotypes with rs41310239-G but not rs41310749-A: can you find them (<code>hap_names[b == 1 &amp; a == 0]</code>) and look up those samples?</li>
+</ul>
+<ul class="checklist">
+<li data-check="s4-read">I read the genotype table into R and named the haplotypes.</li>
+<li data-check="s4-freq">I measured the frequency of each variant.</li>
+<li data-check="s4-table">I cross-tabulated the two variants and saw that they travel together.</li>
+<li data-check="s4-hap">I built the two-SNP haplotype and measured its frequency (~0.087).</li>
+<li data-check="s4-log">I wrote this stage up in my logbook.</li>
+</ul>
+<div class="stage-nav"><button type="button" data-goto="h-s03"><small>Back</small>← Stage 3 · From a pangenome to haplotypes</button><button class="next" type="button" data-goto="h-s05"><small>Next</small>Stage 5 · Linkage disequilibrium and the block →</button></div>

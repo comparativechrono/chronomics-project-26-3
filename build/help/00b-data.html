@@ -1,0 +1,48 @@
+<!-- id: h-data | title: The project data | group: The project | stage: 0 | summary: Every file in /data/examples/scn5a, where it came from, and what to cite | keys: data files reference genome dbsnp hprc pangenome 1000 genomes gwas brugada gtex jaspar primates sources citations licences -->
+<h1>The project data</h1>
+<div class="stage-meta"><span class="when">reference</span><span>come back to this often</span></div>
+<p class="lede">Everything the project needs is in the read-only folder <code>/data/examples/scn5a/</code>. Each file is a small slice of a large public dataset. This page says what each one is, where it came from, and what to cite.</p>
+<p>See the files for yourself: <button class="do" type="button" data-term="ls -R /data/examples/scn5a">list the project data</button>, or open the <b>Files</b> tab.</p>
+
+<h2>The reference genome and annotation — <code>reference/</code></h2>
+<table>
+<tr><th>File</th><th>What it is</th></tr>
+<tr><td><code>GRCh38_chr3_SCN5A.fa.gz</code></td><td>A 1.5-Mb slice of human chromosome 3 (GRCh38) around <i>SCN5A</i>, as a FASTA file (with its <code>.fai</code> and <code>.gzi</code> indexes). Only bases 37,900,001–39,400,000 are real; the rest are written as N so the file stays small while positions are still those of the whole chromosome.</td></tr>
+<tr><td><code>genes_GRCh38.gff3</code></td><td>The protein-coding genes of the locus (<i>SCN5A</i>, <i>SCN10A</i> and neighbours) with the exons of their MANE Select transcript (Ensembl).</td></tr>
+<tr><td><code>SCN5A_exons.bed</code></td><td>The exons of <i>SCN5A</i>'s MANE transcript, numbered from the gene's start.</td></tr>
+<tr><td><code>SCN5A_promoter_variants.bed</code></td><td>The two variants, rs41310749 and rs41310239.</td></tr>
+<tr><td><code>SCN5A_haplotype_block.bed</code></td><td>The extended haplotype block you will define in stage 5 (shown in the genome browser).</td></tr>
+<tr><td><code>dbsnp157_scn5a_2Mb.vcf.gz</code></td><td>The known variants of the 2-Mb locus with their standard names (rsIDs), from dbSNP build 157 (NCBI).</td></tr>
+</table>
+
+<h2>The pangenome — <code>hprc/</code></h2>
+<table>
+<tr><td><code>hprc_scn5a_promoter.vcf.gz</code></td><td>The <b>Human Pangenome Reference Consortium</b> release 2 graph (Minigraph–Cactus v2.1) across the promoter, as whole-allele "bubbles" — the pangenome's own view of the sequence.</td></tr>
+<tr><td><code>hprc_scn5a_2Mb.vcf.gz</code></td><td>The same pangenome across the 2-Mb locus, decomposed into SNVs, insertions and deletions. 231 people, 462 phased haplotypes.</td></tr>
+<tr><td><code>hprc_samples.tsv</code></td><td>Who the 231 people are: population, superpopulation, sex.</td></tr>
+</table>
+
+<h2>1000 Genomes — <code>1000g/</code></h2>
+<table>
+<tr><td><code>1kgp_scn5a_2Mb.vcf.gz</code></td><td>The phased variants of the <b>1000 Genomes Project</b> high-coverage panel across the locus: 3,202 people (2,504 of them unrelated), short-read, already split into one variant per line.</td></tr>
+<tr><td><code>1kgp_samples.tsv</code></td><td>Who they are: population, superpopulation, sex, and whether they are in the unrelated set of 2,504.</td></tr>
+</table>
+
+<h2>Biobank-scale data — <code>gwas/</code> and <code>gtex/</code></h2>
+<table>
+<tr><td><code>gwas/brugada_Barc2022_SCN5A_SCN10A.tsv</code></td><td>The <i>SCN5A</i>–<i>SCN10A</i> locus of a genome-wide association study of <b>Brugada syndrome</b> (Barc et al. 2022), as GRCh38-harmonised summary statistics: for each variant, the effect on disease risk and its <i>P</i>-value.</td></tr>
+<tr><td><code>gtex/GTEx_v8_SCN5A_rs41310749.tsv</code></td><td>The effect of rs41310749 on how much <i>SCN5A</i> RNA is made in each tissue of <b>GTEx</b> v8 (an eQTL table) — you will also query GTEx live.</td></tr>
+</table>
+
+<h2>Motifs and primates — <code>motifs/</code> and <code>primates/</code></h2>
+<table>
+<tr><td><code>motifs/JASPAR2024_CORE_vertebrates_nr_pfms.txt</code></td><td>The binding matrices of transcription factors (JASPAR 2024 CORE, vertebrates) — including the clock proteins (CLOCK, BMAL1, the bHLH family) and cardiac factors (GATA4, TBX5, NKX2-5).</td></tr>
+<tr><td><code>primates/scn5a_promoter_primates.fa</code></td><td>The <i>SCN5A</i> promoter of ten primates (human, the apes, macaques, vervet, mouse lemur), from the Ensembl EPO alignment — for the conservation stage.</td></tr>
+</table>
+
+<div class="callout warn"><div class="co-t"><!--ICON:info-->All public, all anonymous</div>
+<p>The human genome data are population reference panels and summary numbers, not patients. There are no names and no medical records. The guide never asks you to use anything else. Never put personal or patient data into this workbench or an AI tool.</p></div>
+
+<h2>What to cite</h2>
+<p>When you write up, cite the resources you used: the <b>Human Pangenome Reference Consortium</b> (Liao et al. 2023, and the release 2 preprint); the <b>1000 Genomes Project</b> (2015) and its high-coverage panel (Byrska-Bishop et al. 2022); <b>dbSNP</b>; <b>Ensembl</b>; <b>GRCh38</b>; the <b>Brugada GWAS</b> (Barc et al. 2022); <b>GTEx</b> (2020); <b>JASPAR</b> (2024); and the programs (samtools, bcftools, PLINK 2, kalign, R). The key paper on the two variants is <b>Park et al. 2012</b>. The <a href="#h-reading">reading list</a> has these, and the <b>References</b> section of each tool's help page has the programs.</p>
+<div class="stage-nav"><button type="button" data-goto="h-science"><small>Back</small>← The science</button><button class="next" type="button" data-goto="h-reading"><small>Next</small>The reading list →</button></div>

@@ -1,0 +1,80 @@
+<!-- id: h-s09 | title: Stage 9 · Evolution: where did the haplotype come from? | group: The project | stage: 9 | tab: yes | tabtitle: Stage 9 – Evolution | summary: Ancestral alleles from a primate alignment; the variants in Neanderthals and Denisovans; conservation of the variant sites and the promoter E-boxes across primates | keys: stage 9 evolution ancestral derived allele archaic neanderthal denisovan introgression primate alignment kalign conservation e-box conserved phylogeny chimp gorilla orangutan macaque vervet mouse lemur -->
+<h1>Stage 9 · Evolution: where did the haplotype come from?</h1>
+<div class="stage-meta"><span class="when">Weeks 9–10</span><span>about 7 hours</span><span class="stage-progress"></span></div>
+<p class="lede">A haplotype has a history. Is it old or young? Did it pass to us from Neanderthals? Are the variant sites, and the clock E-boxes around them, the kind of DNA evolution has kept untouched? Line up the <i>SCN5A</i> promoter across ten primates, read the archaic human genomes, and find out.</p>
+<div class="skills"><b>You will learn</b><ul>
+<li>ancestral and derived alleles, read from other species</li>
+<li>multiple sequence alignment with <code>kalign</code></li>
+<li>to read archaic (Neanderthal, Denisovan) genotypes</li>
+<li>sequence conservation, and what it suggests about function</li>
+</ul></div>
+
+<h2>1. Line up the promoter across primates</h2>
+<p>The file <code>scn5a_promoter_primates.fa</code> holds the <i>SCN5A</i> promoter of ten primates. Align them with <code>kalign</code>:</p>
+<pre class="code" data-run="term"><code>cd ~/project
+cp /data/examples/scn5a/primates/scn5a_promoter_primates.fa .
+grep -c "&gt;" scn5a_promoter_primates.fa
+kalign -i scn5a_promoter_primates.fa -o results/promoter_aln.fa --type dna --format fasta
+grep "&gt;" results/promoter_aln.fa</code></pre>
+<p>Open the alignment in the <b>Files</b> tab (it has an alignment viewer) and scroll through it. Most columns are the same letter in every species – the promoter is well conserved.</p>
+<div class="callout check"><div class="co-t">Check</div><p>Ten species align (human, chimpanzee, bonobo, gorilla, orangutan, gibbon, two macaques, vervet, mouse lemur), into an alignment a little wider than the 2.2 kb human sequence (gaps are inserted to make the columns line up).</p></div>
+
+<h2>2. What was there before? Ancestral alleles</h2>
+<p>The allele our ancestors carried is usually the one other primates still have. Read the aligned column at each variant. The <b>Add to notebook</b> button opens R; this short function finds the column of a human position in the alignment and prints every species' base:</p>
+<div class="tryrow"><button class="do" type="button" data-stage-nb="r|stage09-evolution|Stage 9 – Evolution">Open my stage 9 notebook</button></div>
+<pre class="code" data-run="r"><code>aln &lt;- local({
+  L &lt;- readLines("~/project/results/promoter_aln.fa"); s &lt;- list(); nm &lt;- NULL
+  for (ln in L) if (startsWith(ln, "&gt;")) { nm &lt;- sub("^&gt;", "", ln); s[[nm]] &lt;- "" } else s[[nm]] &lt;- paste0(s[[nm]], ln)
+  s
+})
+START &lt;- 38649600                         # the first base of the human promoter sequence
+col_of &lt;- function(gpos) { g &lt;- START; h &lt;- strsplit(aln[["human"]], "")[[1]]
+  for (i in seq_along(h)) { if (h[i] != "-") { if (g == gpos) return(i); g &lt;- g + 1 } } }
+base_at &lt;- function(gpos) sapply(aln, function(s) substr(s, col_of(gpos), col_of(gpos)))
+base_at(38651526)      # rs41310749
+base_at(38650537)      # rs41310239</code></pre>
+<div class="callout check"><div class="co-t">Check</div><p>At <b>rs41310749</b> every primate has <b>G</b> – the human reference allele. So G is <b>ancestral</b> and the A allele of your haplotype is the newer, <b>derived</b> one, at a site otherwise unchanged across millions of years. At <b>rs41310239</b> the picture is mixed: human, chimpanzee and bonobo have A, but gorilla, orangutan and gibbon have G, and the monkeys are hard to line up here at all (dashes in the alignment) – this is the repetitive, GC-rich patch from stage 2, where even the aligner struggles. The site has changed more than once in primates.</p></div>
+
+<h2>3. Did it come from Neanderthals?</h2>
+<p>Modern humans carry stretches of DNA inherited from Neanderthals and Denisovans. Did your haplotype? We extracted the archaic genotypes at the two sites for you (the method is in <code>data-build/</code>); read them:</p>
+<pre class="code" data-run="term"><code>column -t /data/examples/scn5a/primates/archaic_alleles.tsv 2>/dev/null || cat /data/examples/scn5a/primates/archaic_alleles.tsv</code></pre>
+<div class="callout check"><div class="co-t">Check</div><p>The <b>Denisovan</b> is homozygous for the ancestral alleles at both sites (G/G, A/A); the <b>Vindija Neanderthal</b> is G/G at rs41310749 (the other calls are missing). None of the archaic genomes carries a <b>derived</b> allele. So the haplotype is <b>not</b> inherited from archaic humans – it arose in modern humans after the split, consistent with the common, young-looking allele you have been tracking.</p></div>
+
+<h2>4. Are the E-boxes conserved?</h2>
+<p>In stage 2 you found three canonical E-boxes in the promoter. Conserved DNA is more likely to be functional – so are the E-boxes kept across primates? For each, count how many of the nine other primates have the identical six letters:</p>
+<pre class="code" data-run="r"><code>ebox_cons &lt;- function(gpos) {
+  c0 &lt;- col_of(gpos); hum6 &lt;- gsub("-", "", substr(aln[["human"]], c0, c0 + 7))
+  others &lt;- setdiff(names(aln), "human")
+  sum(sapply(others, function(sp) startsWith(gsub("-", "", substr(aln[[sp]], c0, c0 + 7)), substr(hum6,1,6))))
+}
+sapply(c(`-147` = 38649834, `-446` = 38650133, `-1748` = 38651435), ebox_cons)</code></pre>
+<div class="callout check"><div class="co-t">Check</div><p>The two E-boxes nearest the gene (at −147 and −446 from the TSS) are conserved in almost every primate – the kind of deep conservation that marks a working switch. The E-box at −1748, the one closest to rs41310749, is <b>much less</b> conserved. An interesting contrast to think about: the clock motifs right at the promoter are kept, while the one by your variant is not.</p></div>
+
+<div class="callout think"><div class="co-t">Think</div>
+<ul>
+<li>rs41310749's site is unchanged across all primates, yet carries a common human variant. What does that combination suggest – is the site under strong constraint, or not?</li>
+<li>The haplotype is absent from Neanderthals and Denisovans and is young. Does "young and common" fit better with drift or with selection? What would you need to test selection properly?</li>
+<li>Why might the proximal E-boxes be conserved but the one by the variant not? What does that say about which motifs matter?</li>
+</ul></div>
+
+<div class="callout log"><div class="co-t">For your logbook</div>
+<ul>
+<li>The ancestral allele of each variant, and how you worked it out.</li>
+<li>The archaic result, and what it says about the haplotype's age.</li>
+<li>The conservation of the three E-boxes, and your reading of the contrast.</li>
+</ul></div>
+
+<h2>Going further</h2>
+<ul>
+<li>Build a tree of the ten promoters with <code>FastTree</code> (<code>FastTree -nt results/promoter_aln.fa</code>) and view it in the Files tab. Does it match the known primate tree?</li>
+<li>Score the primate versions of the −1748 E-box with your stage 8 PWM code: is it a weaker BMAL1 site in the species that have changed it?</li>
+<li>Look up the two sites' conservation scores (phyloP/PhastCons) in the UCSC card. Do they agree with your primate counts?</li>
+</ul>
+<ul class="checklist">
+<li data-check="s9-align">I aligned the promoter across ten primates.</li>
+<li data-check="s9-anc">I found the ancestral allele of each variant.</li>
+<li data-check="s9-archaic">I read the archaic genotypes and concluded the haplotype is not introgressed.</li>
+<li data-check="s9-ebox">I measured the conservation of the three E-boxes.</li>
+<li data-check="s9-log">I wrote this stage up in my logbook.</li>
+</ul>
+<div class="stage-nav"><button type="button" data-goto="h-s08"><small>Back</small>← Stage 8 · Do the variants change a motif?</button><button class="next" type="button" data-goto="h-s10"><small>Next</small>Stage 10 · The haplotype in the biobank →</button></div>

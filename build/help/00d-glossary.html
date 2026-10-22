@@ -1,0 +1,30 @@
+<!-- id: h-glossary | title: Glossary | group: The project | stage: 0 | summary: The words you will meet, in plain language | keys: glossary terms definitions allele haplotype linkage disequilibrium snp vcf eqtl gwas promoter e-box pangenome conservation ancestral -->
+<h1>Glossary</h1>
+<div class="stage-meta"><span class="when">reference</span><span>come back when a word is new</span></div>
+<p class="lede">Plain-language definitions of the words this project uses. They are rough and practical, not textbook-exact; the <a href="#h-reading">reading list</a> is where to go deeper.</p>
+
+<dl class="glossary">
+<dt>Allele</dt><dd>One of the versions of a position in the genome. rs41310749 has alleles G and A.</dd>
+<dt>SNP / SNV</dt><dd>A single-letter difference between genomes (single-nucleotide polymorphism / variant). Both the project's variants are SNPs.</dd>
+<dt>Reference allele / alternate allele</dt><dd>The letter in the reference genome (REF), and any other letter seen (ALT). "Alternate" does not mean "bad" or "rare".</dd>
+<dt>Ancestral / derived allele</dt><dd>The older allele (the one our ancestors had, usually read from other primates) and the newer one that arose by mutation.</dd>
+<dt>Minor allele; allele frequency</dt><dd>The less common allele at a position, and how often an allele is seen (as a fraction of all chromosomes).</dd>
+<dt>Promoter</dt><dd>The stretch of DNA just before a gene where the machinery that reads it assembles and transcription factors bind to turn it up or down.</dd>
+<dt>Transcription factor; motif; E-box</dt><dd>A protein that binds DNA to control a gene; the short DNA pattern it recognises (a motif); the clock proteins' motif is the <b>E-box</b>, core <code>CACGTG</code>.</dd>
+<dt>TSS</dt><dd>Transcription start site: where reading of the gene begins. Because <i>SCN5A</i> is on the minus strand, its promoter is at <i>higher</i> coordinates than the TSS.</dd>
+<dt>Strand</dt><dd>DNA has two strands; a gene is read from one of them. <i>SCN5A</i> is read from the minus strand, so "upstream" means higher chromosome positions.</dd>
+<dt>Haplotype</dt><dd>The particular combination of alleles on one chromosome, inherited together.</dd>
+<dt>Phased</dt><dd>Genotypes written so you know which allele is on which of a person's two chromosomes (<code>0|1</code>, with a bar) rather than just the pair (<code>0/1</code>). You need phasing to see haplotypes.</dd>
+<dt>Linkage disequilibrium (LD)</dt><dd>When two variants are found together more often than chance, because they sit near each other on the same haplotypes. Measured by <b>r²</b> (0–1) and <b>D′</b> (0–1).</dd>
+<dt>Haplotype block</dt><dd>A run of DNA whose variants are in strong LD and are inherited as one piece. Finding the block of the two variants is the heart of this project.</dd>
+<dt>Tag SNP</dt><dd>A variant whose allele predicts another variant's allele (high r²), so measuring one measures the other.</dd>
+<dt>VCF</dt><dd>Variant Call Format: the standard text file of variants and the genotype of each person. Read it with <code>bcftools</code>.</dd>
+<dt>Pangenome</dt><dd>A reference made from many complete genomes at once (here, long-read assemblies), so it can show sequence that a single reference and short reads miss.</dd>
+<dt>GWAS</dt><dd>Genome-wide association study: testing millions of variants, one at a time, for a link to a trait or disease, across many people.</dd>
+<dt>Summary statistics</dt><dd>A GWAS's full results: for each variant, the effect and its <i>P</i>-value. Often public.</dd>
+<dt>eQTL</dt><dd>A variant associated with how much a gene is expressed (how much RNA is made). An "expression quantitative trait locus".</dd>
+<dt>Conservation</dt><dd>How little a piece of DNA has changed across species. Conserved DNA is often (not always) functional.</dd>
+<dt>Brugada syndrome</dt><dd>An inherited heart-rhythm disorder, often from reduced <i>SCN5A</i>/Na<sub>v</sub>1.5 function, that can cause dangerous rhythms, often at rest or in sleep.</dd>
+<dt>superpopulation</dt><dd>The broad ancestry groups of the 1000 Genomes Project: AFR, AMR, EAS, EUR, SAS. Useful for comparing allele frequencies; not the same as "race".</dd>
+</dl>
+<div class="stage-nav"><button type="button" data-goto="h-reading"><small>Back</small>← The reading list</button><button class="next" type="button" data-goto="h-s01"><small>Next</small>Stage 1 · The locus and the genome →</button></div>

@@ -1,0 +1,77 @@
+<!-- id: h-s02 | title: Stage 2 · The promoter and its motifs | group: The project | stage: 2 | tab: yes | tabtitle: Stage 2 – The promoter and its motifs | summary: Read the SCN5A promoter; GC content and CpG; find the E-boxes (CACGTG) and the two variants' place among them; grep and regular expressions | keys: stage 2 promoter sequence gc content cpg island e-box cacgtg canntg motif grep regular expression clock bmal1 transcription factor binding site variants position fold tr -->
+<h1>Stage 2 · The promoter and its motifs</h1>
+<div class="stage-meta"><span class="when">Weeks 2–3</span><span>about 5 hours</span><span class="stage-progress"></span></div>
+<p class="lede">The two variants sit in the <i>SCN5A</i> promoter. Before you ask what haplotype they belong to, get to know the promoter itself: pull out its sequence, measure how GC-rich it is, and find the clock's <b>E-boxes</b> – and see exactly where the two variants fall among them. You will come back to this in stage 8.</p>
+<div class="skills"><b>You will learn</b><ul>
+<li>to cut a piece of sequence out of a genome and work with it as text</li>
+<li>GC content and CpG, and why promoters are often GC-rich</li>
+<li>regular expressions, and finding a motif with <code>grep</code></li>
+<li>what an E-box is, and where the clock proteins bind</li>
+</ul></div>
+
+<div class="callout science"><div class="co-t">E-boxes and the clock</div>
+<p>The clock proteins CLOCK and BMAL1 switch genes on by binding a short DNA motif, the <b>E-box</b>. Its strongest form is the six letters <code>CACGTG</code> (a palindrome – the same read on either strand); more loosely, any <code>CANNTG</code> (where N is any letter) can be an E-box, bound by one or another member of the bHLH family of proteins. If the <i>SCN5A</i> promoter is under clock control, it should contain E-boxes – and a variant that falls in or near one could change how the clock reads the gene. That is the thread this project follows.</p></div>
+
+<h2>1. Cut out the promoter</h2>
+<p>The TSS is near chr3:38,649,687 and the promoter runs upward from there. Take the 2.2 kb from the TSS to just above the second variant, and save it as a FASTA file and as plain letters:</p>
+<pre class="code" data-run="term"><code>cd ~/project
+samtools faidx /data/examples/scn5a/reference/GRCh38_chr3_SCN5A.fa.gz chr3:38649687-38651900 &gt; results/promoter.fa
+grep -v "^&gt;" results/promoter.fa | tr -d '\n' &gt; results/promoter.txt
+wc -c results/promoter.txt</code></pre>
+<p><code>grep -v "^&gt;"</code> drops the FASTA header line, and <code>tr -d '\n'</code> removes the line breaks, leaving one long string of letters.</p>
+<div class="callout check"><div class="co-t">Check</div><p>The promoter piece is <b>2,214</b> letters long.</p></div>
+
+<h2>2. How GC-rich is it?</h2>
+<p>Count the G and C letters. <code>grep -o</code> prints each match on its own line, and <code>wc -l</code> counts them:</p>
+<pre class="code" data-run="term"><code>GC=$(grep -o -E "[GC]" results/promoter.txt | wc -l)
+AT=$(grep -o -E "[AT]" results/promoter.txt | wc -l)
+awk -v gc=$GC -v at=$AT 'BEGIN{ printf "GC: %d   AT: %d   GC%% = %.1f\n", gc, at, 100*gc/(gc+at) }'</code></pre>
+<div class="callout check"><div class="co-t">Check</div><p>About <b>56–57% GC</b> – much more than the genome's ~41% average. GC-rich, CpG-dense stretches like this are typical of promoters, and often fall in a <b>CpG island</b>. Hold that thought: one of the variants (rs41310239) sits in an especially C/G-rich patch.</p></div>
+
+<h2>3. Find the E-boxes</h2>
+<p>The canonical E-box is <code>CACGTG</code>. Find every one, with its position, using <code>grep</code>:</p>
+<pre class="code" data-run="term"><code>grep -o CACGTG results/promoter.txt | wc -l
+grep -b -o CACGTG results/promoter.txt</code></pre>
+<p><code>-b</code> prints the 0-based offset of each match within the piece. Add 38,649,687 to an offset to get the chromosome position.</p>
+<div class="callout check"><div class="co-t">Check</div><p><b>Three</b> canonical E-boxes (<code>CACGTG</code>), at offsets 147, 446 and 1748 – that is chr3:38,649,834, 38,650,133 and <b>38,651,435</b> (147, 446 and 1,748 bases from the TSS). The last of these is just <b>91 bases</b> from rs41310749 (38,651,526).</p></div>
+<p>The looser E-box <code>CANNTG</code> is much commoner. The dot in a regular expression means "any letter":</p>
+<pre class="code" data-run="term"><code>grep -o -E "CA..TG" results/promoter.txt | wc -l
+grep -o -E "CA..TG" results/promoter.txt | sort | uniq -c | sort -rn</code></pre>
+<div class="callout check"><div class="co-t">Check</div><p>About <b>13</b> matches of <code>CANNTG</code> on this strand (there are more on the other strand). The promoter is dense with E-box-like motifs – it is the kind of promoter the clock could read.</p></div>
+
+<h2>4. Where do the variants fall?</h2>
+<p>Neither variant is <i>inside</i> a canonical E-box – but both are close to one. Work out the distances:</p>
+<pre class="code" data-run="term"><code># rs41310749 at 38,651,526; nearest CACGTG at 38,651,435
+echo "rs41310749 is $((38651526 - 38651435)) bp from the -1748 E-box"
+# rs41310239 at 38,650,537
+samtools faidx /data/examples/scn5a/reference/GRCh38_chr3_SCN5A.fa.gz chr3:38650527-38650547</code></pre>
+<div class="task"><div class="task-t">Your turn</div><p>Look at the 21 bases around rs41310239 (the second command). What is unusual about this sequence? (Count the C and G letters, and look for a short pattern repeated.) Why might a single-letter change here be hard for short-read sequencing to call correctly? Write what you see in your logbook – it matters in stage 3.</p>
+<details class="hint"><summary>Show a hint</summary><p>The sequence is <code>ACACCCACAC·A·CGCGCGCGCG</code> – a run of C/G and a <code>CG</code> repeat. Repetitive, low-complexity sequence is exactly what short reads struggle to place and what a long-read pangenome reads better.</p></details></div>
+
+<div class="callout think"><div class="co-t">Think</div>
+<ul>
+<li>You found three strong E-boxes but neither variant is in one. Does that mean the variants cannot affect clock control? (Think about what else is near them, and about the looser motifs.)</li>
+<li>Park et al. (2012) predicted these variants create sites for RXR and Hes1, not a clock E-box. How will you test what site each variant changes? (Stage 8 does this properly, by scoring the sequence against many transcription factors.)</li>
+</ul></div>
+
+<div class="callout log"><div class="co-t">For your logbook</div>
+<ul>
+<li>The GC content of the promoter, and the three E-box positions.</li>
+<li>The distance from each variant to the nearest E-box.</li>
+<li>Your note on the sequence around rs41310239, and why it is awkward for short reads.</li>
+</ul></div>
+
+<h2>Going further</h2>
+<ul>
+<li>Find E-boxes on the other strand too: make the reverse complement (<code>seqtk seq -r results/promoter.fa</code>) and <code>grep</code> that as well. Does the count double?</li>
+<li>Mark the three E-boxes and the two variants as a BED file and load it as a track in the genome browser.</li>
+<li>Look up the <i>SCN5A</i> promoter region in the UCSC card (Databases) on hg38: are there "CpG island" or "transcription factor" tracks you could compare with?</li>
+</ul>
+<ul class="checklist">
+<li data-check="s2-cut">I cut out the promoter sequence.</li>
+<li data-check="s2-gc">I measured its GC content.</li>
+<li data-check="s2-ebox">I found the three canonical E-boxes and their positions.</li>
+<li data-check="s2-vars">I worked out where the two variants fall relative to the E-boxes.</li>
+<li data-check="s2-log">I wrote this stage up in my logbook.</li>
+</ul>
+<div class="stage-nav"><button type="button" data-goto="h-s01"><small>Back</small>← Stage 1 · The locus and the genome</button><button class="next" type="button" data-goto="h-s03"><small>Next</small>Stage 3 · From a pangenome to haplotypes →</button></div>

@@ -1,0 +1,98 @@
+<!-- id: h-s05 | title: Stage 5 · Linkage disequilibrium and the block | group: The project | stage: 5 | tab: yes | tabtitle: Stage 5 – Linkage disequilibrium and the block | summary: r2 and D'; the two variants' LD; extend the haplotype to every variant in 1000 Genomes and define the ~50 kb block in Europeans | keys: stage 5 linkage disequilibrium ld r2 r squared d prime correlation haplotype block 1000 genomes bcftools plink window europeans population specific 50 kb extend apply cor matrix -->
+<h1>Stage 5 · Linkage disequilibrium and the block</h1>
+<div class="stage-meta"><span class="when">Weeks 5–6</span><span>about 7 hours</span><span class="stage-progress"></span></div>
+<p class="lede">Two SNPs that travel together are the visible tip of a <b>haplotype block</b> – a whole run of variants inherited as one piece. This is the core of your project: measure the linkage between the two variants properly, then extend it to every variant around them, in the 2,504 genomes of the 1000 Genomes Project, and draw the boundaries of the block.</p>
+<div class="skills"><b>You will learn</b><ul>
+<li>linkage disequilibrium, and <b>r²</b> and <b>D′</b> as measures of it</li>
+<li>to work with the 1000 Genomes phased panel, and to pick an unrelated subset</li>
+<li>to correlate every variant in a window with a haplotype, in R</li>
+<li>that LD is <b>population-specific</b> – and why that matters for a block</li>
+</ul></div>
+
+<div class="callout science"><div class="co-t">Linkage disequilibrium</div>
+<p>Every mutation arises on one chromosome, beside the variants that chromosome already carries. Recombination slowly shuffles them, but variants close together are rarely separated and stay together on the same <b>haplotypes</b> for many generations. Variants found together more often than chance are in <b>linkage disequilibrium</b> (LD). Two measures: <b>r²</b> (the squared correlation, 0–1) is high only when two variants have similar frequencies and predict each other; <b>D′</b> (0–1) is high whenever one allele is found almost only with one allele of the other, even if their frequencies differ. A <b>haplotype block</b> is a run of variants in high mutual LD.</p></div>
+
+<h2>1. The two variants' LD, in 2,504 genomes</h2>
+<p>The 1000 Genomes file has 3,202 people; 2,504 of them are unrelated – the set to use for LD. Pull the unrelated sample names from the sample table, then extract the two variants' genotypes for them:</p>
+<pre class="code" data-run="term"><code>cd ~/project
+awk -F'\t' 'NR>1 &amp;&amp; $6=="yes"{print $1}' /data/examples/scn5a/1000g/1kgp_samples.tsv &gt; results/unrelated.txt
+wc -l results/unrelated.txt
+bcftools view -S results/unrelated.txt -m2 -M2 -v snps -r chr3:38650537,chr3:38651526 \
+  /data/examples/scn5a/1000g/1kgp_scn5a_2Mb.vcf.gz \
+  | bcftools query -f '%POS\t%REF\t%ALT[\t%GT]\n' | sed 's/|/\t/g' &gt; results/kgp_two_variants.tsv
+awk '{print $1, "columns:", NF}' results/kgp_two_variants.tsv</code></pre>
+<div class="callout check"><div class="co-t">Check</div><p>2,504 unrelated samples, so each variant row has 4 + 5,008 columns. (The 1000 Genomes file is already one allele per line, so you do not need <code>norm</code> here – unlike the pangenome.)</p></div>
+<p>In R, measure r² between the two:</p>
+<pre class="code" data-run="r"><code>kv &lt;- read.delim("~/project/results/kgp_two_variants.tsv", header = FALSE, na.strings = ".")
+hap &lt;- as.matrix(kv[, -(1:3)])                 # one row per variant, one column per haplotype
+a &lt;- hap[kv$V1 == 38651526, ]                  # rs41310749-A
+b &lt;- hap[kv$V1 == 38650537, ]                  # rs41310239-G
+cor(a, b, use = "complete.obs")^2              # r^2, pooled across all 2,504</code></pre>
+<div class="callout check"><div class="co-t">Check</div><p>Pooled across everyone, r² ≈ <b>0.70</b>. The two variants are in strong LD – but not perfect, and the next sections show why: the LD is very different between populations.</p></div>
+
+<h2>2. Extend to the whole region</h2>
+<p>Now the real question: which <i>other</i> variants travel with the two-SNP haplotype? LD is strongest within one population, so work within <b>Europeans</b> first (stage 6 compares populations). Extract every biallelic SNP in a 160-kb window, for the unrelated Europeans:</p>
+<pre class="code" data-run="term"><code>awk -F'\t' 'NR>1 &amp;&amp; $6=="yes" &amp;&amp; $4=="EUR"{print $1}' /data/examples/scn5a/1000g/1kgp_samples.tsv &gt; results/eur.txt
+wc -l results/eur.txt
+bcftools view -S results/eur.txt -m2 -M2 -v snps -r chr3:38560000-38720000 \
+  /data/examples/scn5a/1000g/1kgp_scn5a_2Mb.vcf.gz \
+  | bcftools query -f '%POS\t%REF\t%ALT[\t%GT]\n' | sed 's/|/\t/g' &gt; results/kgp_eur_window.tsv
+wc -l results/kgp_eur_window.tsv</code></pre>
+<div class="callout check"><div class="co-t">Check</div><p>About <b>503</b> unrelated Europeans, and roughly <b>3,300</b> SNPs in the 160-kb window.</p></div>
+<div class="tryrow"><button class="do" type="button" data-stage-nb="r|stage05-ld|Stage 5 – LD and the block">Open my stage 5 notebook</button></div>
+<p>In R, build the two-SNP haplotype in this group and correlate every SNP with it:</p>
+<pre class="code" data-run="r"><code>w &lt;- read.delim("~/project/results/kgp_eur_window.tsv", header = FALSE, na.strings = ".")
+pos &lt;- w$V1; alt &lt;- w$V3
+G &lt;- as.matrix(w[, -(1:3)])                    # SNPs x haplotypes
+a &lt;- G[pos == 38651526 &amp; alt == "A", ]
+b &lt;- G[pos == 38650537 &amp; alt == "G", ]
+both &lt;- as.integer(a == 1 &amp; b == 1)            # the two-SNP haplotype, in Europeans
+mean(both)                                      # its frequency here
+r2 &lt;- apply(G, 1, function(x) suppressWarnings(cor(x, both, use = "complete.obs"))^2)</code></pre>
+<p><code>apply(G, 1, …)</code> runs the correlation for every row (SNP). Now find the block – the SNPs in high LD with the haplotype:</p>
+<pre class="code" data-run="r"><code>block &lt;- pos[!is.na(r2) &amp; r2 >= 0.8]
+length(block)                                   # how many SNPs
+range(block)                                    # the block's edges
+(max(block) - min(block)) / 1000                # its width in kb</code></pre>
+<div class="callout check"><div class="co-t">Check</div><p>In Europeans the two variants have r² = <b>1.0</b> with each other (the two-SNP haplotype is at ~16% here). Around <b>20</b> SNPs reach r² ≥ 0.8 with the haplotype, spanning <b>chr3:38,631,501–38,682,101</b> – a block of about <b>50 kb</b>. This is the larger haplotype your project set out to find. It runs from inside <i>SCN5A</i>, across the promoter, into the gap before <i>SCN10A</i>.</p></div>
+
+<h2>3. Picture the block</h2>
+<pre class="code" data-run="r"><code>png("~/project/figures/fig_ld_block.png", width = 1600, height = 800, res = 150)
+plot(pos / 1e6, r2, pch = 20, cex = 0.6, col = ifelse(!is.na(r2) &amp; r2 >= 0.8, "#c2410c", "grey70"),
+     xlab = "chr3 position (Mb, GRCh38)", ylab = expression(r^2 ~ "with the two-SNP haplotype (EUR)"),
+     main = "The extended SCN5A promoter haplotype block")
+abline(v = c(38651526, 38650537) / 1e6, lty = 3, col = "blue")
+rect(38548057/1e6, -0.04, 38649743/1e6, -0.01, col = "grey40", border = NA); text(38.60, 0.03, "SCN5A", cex = 0.8)
+dev.off()</code></pre>
+<p>Save the block for later stages:</p>
+<pre class="code" data-run="r"><code>write.csv(data.frame(pos = pos, alt = alt, r2 = r2), "~/project/results/ld_eur.csv", row.names = FALSE)</code></pre>
+
+<div class="callout think"><div class="co-t">Think</div>
+<ul>
+<li>How far does the block reach above the TSS, towards <i>SCN10A</i>? Does it reach <i>SCN10A</i> itself?</li>
+<li>The block includes variants inside <i>SCN5A</i> (introns) and in the <i>SCN5A</i>–<i>SCN10A</i> gap. Why might that gap matter for a gene? (Stage 7 looks at what regulatory elements are there.)</li>
+<li>Pooled across all populations the r² between the two variants was only 0.70, but within Europeans it is 1.0. What does that tell you about comparing LD across populations? (Stage 6.)</li>
+</ul></div>
+
+<div class="callout log"><div class="co-t">For your logbook</div>
+<ul>
+<li>What r² and D′ mean, and the r² between the two variants (pooled and in Europeans).</li>
+<li>The block's edges and width, and which genes it covers. <b>This is a key result of your project.</b></li>
+<li>Your figure of r² along the region.</li>
+</ul></div>
+
+<h2>Going further</h2>
+<ul>
+<li>Work out D′ as well as r² for the two variants (D′ stays high even when frequencies differ). Why is D′ the better measure of whether one allele sits only on the other's background?</li>
+<li>PLINK 2 computes LD directly: try <code>plink2 --vcf … --r2-unphased</code> on the window and compare with your R result (see <a href="#h-plink2">PLINK 2</a>).</li>
+<li>Lower the threshold to r² ≥ 0.5: how much wider is the block? Where would you honestly draw its edge?</li>
+</ul>
+<ul class="checklist">
+<li data-check="s5-ld2">I measured the r² between the two variants.</li>
+<li data-check="s5-window">I extracted every SNP in the window for unrelated Europeans.</li>
+<li data-check="s5-r2">I correlated every SNP with the two-SNP haplotype.</li>
+<li data-check="s5-block">I found the ~50 kb block and its edges.</li>
+<li data-check="s5-fig">I drew the figure of r² along the region.</li>
+<li data-check="s5-log">I wrote this stage up in my logbook.</li>
+</ul>
+<div class="stage-nav"><button type="button" data-goto="h-s04"><small>Back</small>← Stage 4 · The two-SNP haplotype</button><button class="next" type="button" data-goto="h-s06"><small>Next</small>Stage 6 · The block across populations →</button></div>

@@ -1,0 +1,67 @@
+<!-- id: h-home | title: Start here | group: The project | stage: 0 | tab: yes | tabtitle: Start here – the project | summary: The question, the plan, how to use this guide | keys: start project scn5a haplotype promoter overview plan weeks question aims heart clock circadian -->
+<h1>One promoter, many genomes</h1>
+<div class="stage-meta"><span class="when">Week 1</span><span>about 3 hours</span><span class="stage-progress"></span></div>
+<p class="lede">A research project of the Chronomic Medicine Group. You will take two small variants in the promoter of a heart gene, <i>SCN5A</i>, and ask what larger stretch of DNA they belong to – reading hundreds of complete human genomes, scoring the motifs the variants sit in, tracing them back through our evolution, and testing them in biobank-scale data on the heart.</p>
+
+<div class="callout science"><div class="co-t">The question</div>
+<p><i>SCN5A</i> makes Na<sub>v</sub>1.5, the sodium channel that starts each heartbeat. Its promoter – the switch that controls how much of the channel is made – carries two variants that our group has studied for years for a link to the <b>circadian</b> (daily) control of the heart: <b>rs41310749</b> and <b>rs41310239</b>. They are known to travel together. What nobody has described is the <b>larger haplotype</b> – the whole block of DNA inherited as one piece – that they are part of.</p>
+<p><b>Your project:</b> use the long-read genomes of the Human Pangenome Reference Consortium and the 1000 Genomes Project to find and measure that block; work out which transcription-factor motifs the variants change (including the clock's <b>E-boxes</b>); trace the variants and the motifs through archaic humans and other primates; and ask what the block does, in a genome-wide study of a heart-rhythm disease and in gene-expression data.</p>
+</div>
+
+<p>As far as we know, nobody has described this haplotype before. The guide takes you through it in eleven stages, about one a week. Each stage teaches you the tools it needs – you do not need to have programmed before. By the end you will have used a Linux terminal, real bioinformatics programs, R, a genome browser and public databases, and you will have results of your own to write up.</p>
+
+<h2>The plan</h2>
+<ol class="stage-list">
+  <li><button type="button" data-goto="h-science"><span class="n">0</span><span class="t">The science: clocks, the heart and <i>SCN5A</i></span><span class="w">week 1</span><span class="s">What the gene does, what the two variants are, and why the haplotype is still an open question</span></button></li>
+  <li><button type="button" data-goto="h-s01"><span class="n">1</span><span class="t">The locus and the genome</span><span class="w">week 1–2</span><span class="s">Commands, files and folders; FASTA and annotation; find <i>SCN5A</i> and its promoter; strand and coordinates</span></button></li>
+  <li><button type="button" data-goto="h-s02"><span class="n">2</span><span class="t">The promoter and its motifs</span><span class="w">week 2–3</span><span class="s">Read the promoter sequence; find its E-boxes and the two variants; GC content and CpG</span></button></li>
+  <li><button type="button" data-goto="h-s03"><span class="n">3</span><span class="t">From a pangenome to haplotypes</span><span class="w">week 3–4</span><span class="s">VCF files, genotypes and phasing; the two variants in 462 long-read haplotypes</span></button></li>
+  <li><button type="button" data-goto="h-s04"><span class="n">4</span><span class="t">The two-SNP haplotype</span><span class="w">week 4</span><span class="s">Build the haplotype of both variants; your first R notebook; tables and bar charts</span></button></li>
+  <li><button type="button" data-goto="h-s05"><span class="n">5</span><span class="t">Linkage disequilibrium and the block</span><span class="w">week 5–6</span><span class="s">r² and D′; extend the haplotype to a ~50 kb block across 2,504 genomes</span></button></li>
+  <li><button type="button" data-goto="h-s06"><span class="n">6</span><span class="t">The block across populations</span><span class="w">week 6–7</span><span class="s">Frequencies in five continental groups; why the block is common in some and rare in others</span></button></li>
+  <li><button type="button" data-goto="h-s07"><span class="n">7</span><span class="t">What is in the block?</span><span class="w">week 7–8</span><span class="s">rsIDs, consequences and regulation (VEP); enhancers; the neighbour <i>SCN10A</i></span></button></li>
+  <li><button type="button" data-goto="h-s08"><span class="n">8</span><span class="t">Do the variants change a motif?</span><span class="w">week 8–9</span><span class="s">Score every allele against clock and cardiac transcription-factor matrices (JASPAR) in R</span></button></li>
+  <li><button type="button" data-goto="h-s09"><span class="n">9</span><span class="t">Evolution: where did the haplotype come from?</span><span class="w">week 9–10</span><span class="s">Ancestral alleles; Neanderthals and Denisovans; conservation across primates; the E-boxes</span></button></li>
+  <li><button type="button" data-goto="h-s10"><span class="n">10</span><span class="t">The haplotype in the biobank</span><span class="w">week 10–11</span><span class="s">A Brugada-syndrome GWAS; gene expression (GTEx); putting the mechanism together</span></button></li>
+  <li><button type="button" data-goto="h-s11"><span class="n">11</span><span class="t">Write it up</span><span class="w">week 11–12</span><span class="s">Figures, methods, results and discussion; making the analysis repeatable</span></button></li>
+</ol>
+<p>Stages 1–7 are the core of the project. Stages 8, 9 and 10 each add a separate line of evidence, and every stage ends with <b>going further</b> – ideas to follow if you have time, or if you want to make the project your own. The guide is written for a year: take the stages slowly, read around them, and bring your questions to your supervisor.</p>
+
+<h2>How this page works</h2>
+<ul>
+  <li><b>The guide is on the left; the workbench is on the right.</b> The tabs along the top of the guide are the stages; <b>Help</b> is the manual of the tools. Drag the line between the two halves to make either wider.</li>
+  <li><b>Grey boxes with code</b> have a button: <b>Run in the terminal</b> (terminal commands) or <b>Add to notebook</b> (R code). The buttons save typing, but type the first few commands of each stage yourself – that is how they stick. <button class="do" type="button" data-term="echo 'Hello, SCN5A'">Try it: put a command in the terminal</button></li>
+  <li><b>Checklists</b> like the one below have boxes to tick. What you tick is saved in this browser, and the tab of the stage fills in as you go.</li>
+  <li><b>Hints and answers</b> hide behind <i>Show a hint</i>. Try first; looking is fine when you are stuck.</li>
+  <li><b>Search</b> (top of this pane) finds any word in the guide and in the help.</li>
+  <li><b>New words</b> are explained in the <a href="#h-glossary">Glossary</a>; the data are described in <a href="#h-data">The project data</a>, and the papers in <a href="#h-reading">The reading list</a>.</li>
+</ul>
+<div class="callout warn"><div class="co-t"><!--ICON:info-->Your files live in this browser</div>
+<p>Everything you make is kept in this browser on this computer – not on a server. Use the same computer and browser each time, and once a week click <b>My files → Download all my files</b> (top right) to keep a copy. In a private window, or after clearing the browser's data, your files are gone.</p></div>
+
+<h2>Working on your own</h2>
+<ul>
+  <li><b>Keep a logbook.</b> Every research project has one. Yours is a text file, <code>~/project/logbook.md</code>: what you did, what you found, what you did not understand. Bring your questions to your supervisor. <button class="do" type="button" data-logbook="1">Make and open my logbook</button></li>
+  <li><b>One stage a week</b> is about right, with time to read. Some take longer – that is normal.</li>
+  <li><b>When you are stuck:</b> read the error message (it usually says what is wrong); check the hint; search the guide; ask the <b>AI</b> tab (it needs a key of your own – see <a href="#h-ai">The AI assistant</a> – and it can be wrong, so check what it says); write the question in your logbook for your supervisor.</li>
+  <li><b>Check yourself.</b> The green <i>Check</i> boxes say what you should see. If your numbers differ, go back a step – a small slip early on changes everything after it.</li>
+</ul>
+
+<h2>Ground rules</h2>
+<ul>
+  <li>All the data here are <b>public</b> and come from people who agreed to their genomes being shared openly, or are summary numbers with no individual in them. Never put personal or patient data into this workbench or into an AI tool.</li>
+  <li><b>Cite</b> the data and the programs you use (<a href="#h-data">The project data</a> has the papers). If you use the AI assistant, say so in your report, and how.</li>
+  <li>Your <b>results are yours</b>: the guide shows you how to get them, and the checks tell you when you have; what they mean is for you to think about and discuss.</li>
+</ul>
+
+<h2>Before stage 1</h2>
+<ul class="checklist">
+  <li data-check="s0-read">Read this page.</li>
+  <li data-check="s0-name">Click <b>user</b> at the top of the page and type your first name: the terminal will greet you by it.</li>
+  <li data-check="s0-logbook">Make your logbook (<button class="do" type="button" data-logbook="1">Make and open my logbook</button>) and write today's date and one sentence about what you hope to learn.</li>
+  <li data-check="s0-science">Read <a href="#h-science">The science: clocks, the heart and SCN5A</a>.</li>
+  <li data-check="s0-papers">Read two papers from the <a href="#h-reading">reading list</a> – Park et al. 2012 and a review of the circadian clock in the heart are good first ones – and write three questions about them in your logbook.</li>
+  <li data-check="s0-tour">Take <a href="#h-start">a first session with the tools</a> (fifteen minutes, every tab once).</li>
+  <li data-check="s0-download">Download all your files once (<b>My files → Download all my files</b>) to see how it works.</li>
+</ul>
+<div class="stage-nav"><button class="next" type="button" data-goto="h-s01"><small>Next</small>Stage 1 · The locus and the genome →</button></div>
