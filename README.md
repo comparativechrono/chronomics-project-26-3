@@ -49,7 +49,7 @@ line of evidence; each stage ends with "going further" ideas, so the student can
 | 2 | The promoter and its motifs | cutting out sequence; GC content and CpG; regular expressions; finding E-boxes with `grep` |
 | 3 | From a pangenome to haplotypes | what a pangenome is; VCF, genotypes and phasing; `bcftools annotate`/`norm`; multiallelic records |
 | 4 | The two-SNP haplotype | the first R notebook; data frames and matrices; allele frequencies; a cross-tabulation |
-| 5 | Linkage disequilibrium and the block | r² and D′; the unrelated panel; correlating every variant with a haplotype; defining the ~50 kb block |
+| 5 | Linkage disequilibrium and the block | r² and D′; defining the block directly from the phased pangenome (indels and SVs included); reconstructing the promoter sequence; confirming it in 1000 Genomes |
 | 6 | The block across populations | haplotype frequencies in five groups; the African exception; why LD is population-specific |
 | 7 | What is in the block? | VEP consequences and regulation; enhancers; the *SCN5A*–*SCN10A* neighbourhood |
 | 8 | Do the variants change a motif? | PWMs from JASPAR; log-odds scoring; reference vs alternate; the clock-motif loss and RXR gain |
@@ -139,8 +139,10 @@ The analysis behind the guide was done first, independently, in Python and R (th
 
 - the two variants' reference bases and the promoter's three canonical E-boxes (stages 1–2);
 - the two-SNP haplotype in the HPRC pangenome (462 haplotypes; frequency 0.087, 40 carry both; stages 3–4);
-- the LD block in the 1000 Genomes Europeans (r²=1.0 between the variants; ~20 variants at r²≥0.8 spanning
-  chr3:38,631,501–38,682,101; stage 5) and the population frequencies (EUR 16.8%, SAS 18.9%, AMR 13.3%, EAS 6.8%,
+- the two-SNP haplotype in the 462 phased HPRC haplotypes and the block read directly from them — 12 variants
+  over 31.6 kb including two indels — then confirmed and sharpened in the 1000 Genomes Europeans (r²=1.0; ~20
+  variants spanning chr3:38,631,501–38,682,101; stage 5), with the carrier promoter sequence reconstructed through
+  the repeat, and the population frequencies (EUR 16.8%, SAS 18.9%, AMR 13.3%, EAS 6.8%,
   AFR 1.5%; stage 6);
 - the enhancer overlap of rs41310749 (stage 7);
 - the JASPAR motif scores (BMAL1 0.63→0.17 and RXR gain at rs41310749; stage 8);

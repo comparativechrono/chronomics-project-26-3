@@ -600,100 +600,117 @@ dev.off()</code></pre>
 </ul>
 <div class="stage-nav"><button type="button" data-goto="h-s03"><small>Back</small>← Stage 3 · From a pangenome to haplotypes</button><button class="next" type="button" data-goto="h-s05"><small>Next</small>Stage 5 · Linkage disequilibrium and the block →</button></div>
 </article>
-<article class="help-page" id="h-s05" data-title="Stage 5 · Linkage disequilibrium and the block" data-group="The project" data-group-page="h-home" data-keys="stage 5 linkage disequilibrium ld r2 r squared d prime correlation haplotype block 1000 genomes bcftools plink window europeans population specific 50 kb extend apply cor matrix" data-stage="5" hidden>
+<article class="help-page" id="h-s05" data-title="Stage 5 · Linkage disequilibrium and the block" data-group="The project" data-group-page="h-home" data-keys="stage 5 linkage disequilibrium ld r2 r squared d prime haplotype block pangenome hprc phased long read indels structural variants bcftools consensus 1000 genomes europeans 50 kb extend apply cor matrix repeat sequence" data-stage="5" hidden>
 <h1>Stage 5 · Linkage disequilibrium and the block</h1>
-<div class="stage-meta"><span class="when">Weeks 5–6</span><span>about 7 hours</span><span class="stage-progress"></span></div>
-<p class="lede">Two SNPs that travel together are the visible tip of a <b>haplotype block</b> – a whole run of variants inherited as one piece. This is the core of your project: measure the linkage between the two variants properly, then extend it to every variant around them, in the 2,504 genomes of the 1000 Genomes Project, and draw the boundaries of the block.</p>
+<div class="stage-meta"><span class="when">Weeks 5–6</span><span>about 8 hours</span><span class="stage-progress"></span></div>
+<p class="lede">Two SNPs that travel together are the visible tip of a <b>haplotype block</b> – a whole run of variants inherited as one piece. This is the core of your project, and it is where the pangenome earns its keep: its 462 genomes are <i>already phased</i> and include the indels and repetitive sequence short reads miss, so you can read the block straight off them. Then you will confirm and sharpen it in the 3,202 genomes of the 1000 Genomes Project.</p>
 <div class="skills"><b>You will learn</b><ul>
 <li>linkage disequilibrium, and <b>r²</b> and <b>D′</b> as measures of it</li>
-<li>to work with the 1000 Genomes phased panel, and to pick an unrelated subset</li>
-<li>to correlate every variant in a window with a haplotype, in R</li>
-<li>that LD is <b>population-specific</b> – and why that matters for a block</li>
+<li>to define a haplotype block directly from phased pangenome haplotypes – <b>including indels and SVs</b></li>
+<li>to rebuild a haplotype's actual sequence through a repeat with <code>bcftools consensus</code></li>
+<li>to confirm the block, and sharpen its edges, in a much larger short-read panel</li>
 </ul></div>
 
 <div class="callout science"><div class="co-t">Linkage disequilibrium</div>
-<p>Every mutation arises on one chromosome, beside the variants that chromosome already carries. Recombination slowly shuffles them, but variants close together are rarely separated and stay together on the same <b>haplotypes</b> for many generations. Variants found together more often than chance are in <b>linkage disequilibrium</b> (LD). Two measures: <b>r²</b> (the squared correlation, 0–1) is high only when two variants have similar frequencies and predict each other; <b>D′</b> (0–1) is high whenever one allele is found almost only with one allele of the other, even if their frequencies differ. A <b>haplotype block</b> is a run of variants in high mutual LD.</p></div>
+<p>Every mutation arises on one chromosome, beside the variants that chromosome already carries. Recombination slowly shuffles them, but variants close together are rarely separated and stay together on the same <b>haplotypes</b> for many generations. Variants found together more often than chance are in <b>linkage disequilibrium</b> (LD). Two measures: <b>r²</b> (the squared correlation, 0–1) is high only when two variants have similar frequencies and predict each other; <b>D′</b> (0–1) is high whenever one allele is found almost only with one allele of the other, even if their frequencies differ. A <b>haplotype block</b> is a run of variants in high mutual LD – and because the pangenome gives you whole phased chromosomes, you can see it directly.</p></div>
 
-<h2>1. The two variants' LD, in 2,504 genomes</h2>
-<p>The 1000 Genomes file has 3,202 people; 2,504 of them are unrelated – the set to use for LD. Pull the unrelated sample names from the sample table, then extract the two variants' genotypes for them:</p>
+<h2>1. The two variants, in the pangenome's phased haplotypes</h2>
+<p>You already have the two-SNP haplotype from stage 4 (your 462 pangenome haplotypes, 40 carrying both). Load your stage 5 notebook and rebuild the two variants' rows:</p>
+<div class="tryrow"><button class="do" type="button" data-stage-nb="r|stage05-ld|Stage 5 – LD and the block">Open my stage 5 notebook</button></div>
+<pre class="code" data-run="r"><code>tv &lt;- read.delim("~/project/results/hprc_two_variants.tsv", header = FALSE, na.strings = ".")
+samples &lt;- readLines("~/project/results/hprc_samples_order.txt")
+hap_names &lt;- paste0(rep(samples, each = 2), "_hap", 1:2)
+colnames(tv) &lt;- c("pos", "rsid", "ref", "alt", hap_names)
+a &lt;- as.integer(tv[tv$rsid == "rs41310749", hap_names])
+b &lt;- as.integer(tv[tv$rsid == "rs41310239", hap_names])
+cor(a, b, use = "complete.obs")^2      # r^2 between the two variants, read off phased haplotypes</code></pre>
+<div class="callout check"><div class="co-t">Check</div><p>r² ≈ <b>0.63</b> between the two variants in the 462 pangenome haplotypes. No statistical phasing was needed – each chromosome was assembled whole, so the haplotypes are read directly.</p></div>
+
+<h2>2. Extend to the block – every variant, indels and all</h2>
+<p>Now the real question: which <i>other</i> variants travel with the two-SNP haplotype? Pull <b>every</b> variant of the locus from the pangenome – SNPs <i>and</i> insertions and deletions – using the split file you made in stage 3, and build a table across a window around the promoter:</p>
 <pre class="code" data-run="term"><code>cd ~/project
-awk -F'\t' 'NR>1 &amp;&amp; $6=="yes"{print $1}' /data/examples/scn5a/1000g/1kgp_samples.tsv &gt; results/unrelated.txt
-wc -l results/unrelated.txt
-bcftools view -S results/unrelated.txt -m2 -M2 -v snps -r chr3:38650537,chr3:38651526 \
-  /data/examples/scn5a/1000g/1kgp_scn5a_2Mb.vcf.gz \
-  | bcftools query -f '%POS\t%REF\t%ALT[\t%GT]\n' | sed 's/|/\t/g' &gt; results/kgp_two_variants.tsv
-awk '{print $1, "columns:", NF}' results/kgp_two_variants.tsv</code></pre>
-<div class="callout check"><div class="co-t">Check</div><p>2,504 unrelated samples, so each variant row has 4 + 5,008 columns. (The 1000 Genomes file is already one allele per line, so you do not need <code>norm</code> here – unlike the pangenome.)</p></div>
-<p>In R, measure r² between the two:</p>
-<pre class="code" data-run="r"><code>kv &lt;- read.delim("~/project/results/kgp_two_variants.tsv", header = FALSE, na.strings = ".")
-hap &lt;- as.matrix(kv[, -(1:3)])                 # one row per variant, one column per haplotype
-a &lt;- hap[kv$V1 == 38651526, ]                  # rs41310749-A
-b &lt;- hap[kv$V1 == 38650537, ]                  # rs41310239-G
-cor(a, b, use = "complete.obs")^2              # r^2, pooled across all 2,504</code></pre>
-<div class="callout check"><div class="co-t">Check</div><p>Pooled across everyone, r² ≈ <b>0.70</b>. The two variants are in strong LD – but not perfect, and the next sections show why: the LD is very different between populations.</p></div>
+bcftools view -r chr3:38600000-38700000 results/hprc_split.vcf.gz \
+  | bcftools query -f '%POS\t%REF\t%ALT[\t%GT]\n' | sed 's/|/\t/g' &gt; results/hprc_window.tsv
+wc -l results/hprc_window.tsv</code></pre>
+<p>In R, build the two-SNP haplotype and correlate every variant with it. The rows that are not single-letter changes are the <b>indels</b> – the ones short reads struggle to call:</p>
+<pre class="code" data-run="r"><code>w &lt;- read.delim("~/project/results/hprc_window.tsv", header = FALSE, na.strings = ".")
+pos &lt;- w$V1; ref &lt;- w$V2; alt &lt;- w$V3
+G &lt;- as.matrix(w[, -(1:3)])
+a2 &lt;- G[pos == 38651526 &amp; alt == "A", ]; b2 &lt;- G[pos == 38650537 &amp; alt == "G", ]
+both &lt;- as.integer(a2 == 1 &amp; b2 == 1)                 # the two-SNP haplotype, in the pangenome
+sum(both, na.rm = TRUE)                               # carriers
+r2 &lt;- apply(G, 1, function(x) suppressWarnings(cor(x, both, use = "complete.obs"))^2)
+is_indel &lt;- nchar(ref) != nchar(alt)
+block &lt;- which(!is.na(r2) &amp; r2 >= 0.8)
+length(block); range(pos[block]); (max(pos[block]) - min(pos[block])) / 1000   # size in kb
+data.frame(pos = pos[block], ref = substr(ref[block],1,10), alt = substr(alt[block],1,10),
+           type = ifelse(is_indel[block], "indel", "SNV"), r2 = round(r2[block], 2))</code></pre>
+<div class="callout check"><div class="co-t">Check</div><p>40 carriers. The pangenome block (r² ≥ 0.8) is <b>12 variants over ~31.6 kb (chr3:38,650,537–38,682,101)</b>, and <b>two of them are indels</b> – an 8-bp deletion at 38,679,353 and a 1-bp deletion at 38,680,173 (both r² = 0.84). You have read a haplotype block, structural variants included, straight from complete genomes. The block runs from the promoter into the gap before <i>SCN10A</i>.</p></div>
+<div class="callout science"><div class="co-t">Why this needed the pangenome</div>
+<p>A block defined only from SNPs is missing part of the story. Insertions and deletions in LD with your haplotype are part of it – and they are exactly what short-read sequencing calls badly, especially in repetitive DNA. Because the pangenome assembled every genome in full, those indels are in your table with everything else, and you could tell they travel with the haplotype.</p></div>
 
-<h2>2. Extend to the whole region</h2>
-<p>Now the real question: which <i>other</i> variants travel with the two-SNP haplotype? LD is strongest within one population, so work within <b>Europeans</b> first (stage 6 compares populations). Extract every biallelic SNP in a 160-kb window, for the unrelated Europeans:</p>
+<h2>3. Read the actual sequence of a carrier haplotype</h2>
+<p>In stage 2 you saw that rs41310239 sits in an awkward <code>CG</code>-repeat. The pangenome can rebuild the real sequence of any haplotype through it, with <code>bcftools consensus</code>. Compare a carrier with a non-carrier:</p>
+<pre class="code" data-run="term"><code>samtools faidx /data/examples/scn5a/reference/GRCh38_chr3_SCN5A.fa.gz chr3:38650480-38650600 &gt; results/patch.fa
+echo "REFERENCE  "; grep -v "^&gt;" results/patch.fa | tr -d '\n' | cut -c41-95; echo
+echo "HG00097 h1 (non-carrier)"; bcftools consensus -f results/patch.fa -s HG00097 -H 1 results/hprc_split.vcf.gz 2>/dev/null | grep -v "^&gt;" | tr -d '\n' | cut -c41-95; echo
+echo "HG00133 h1 (carrier)     "; bcftools consensus -f results/patch.fa -s HG00133 -H 1 results/hprc_split.vcf.gz 2>/dev/null | grep -v "^&gt;" | tr -d '\n' | cut -c41-95; echo</code></pre>
+<div class="callout check"><div class="co-t">Check</div><p>The reference and the non-carrier (HG00097) read <code>…CACCCACAC<b>A</b>CGCGCGCGCG…</code>; the carrier (HG00133) reads <code>…CACCCACAC<b>G</b>CGCGCGCGCG…</code> – the derived allele turns the <code>A</code> into a <code>G</code> and so lengthens the run of <code>CG</code>. You have reconstructed a real human haplotype's promoter sequence, base by base, through a repeat that short reads cannot phase. (If HG00133 is not a carrier in your data, pick one: <code>sub("_hap1$", "", hap_names[which(both == 1)][1])</code>.)</p></div>
+
+<h2>4. Confirm and sharpen it in 1000 Genomes</h2>
+<p>The pangenome gave you the block from 231 people; the 1000 Genomes Project has 3,202 (2,504 unrelated), so it can place the edges more precisely. LD is strongest within one population, so work within <b>Europeans</b> (stage 6 compares populations). Extract every biallelic SNP in the window for the unrelated Europeans:</p>
 <pre class="code" data-run="term"><code>awk -F'\t' 'NR>1 &amp;&amp; $6=="yes" &amp;&amp; $4=="EUR"{print $1}' /data/examples/scn5a/1000g/1kgp_samples.tsv &gt; results/eur.txt
-wc -l results/eur.txt
 bcftools view -S results/eur.txt -m2 -M2 -v snps -r chr3:38560000-38720000 \
   /data/examples/scn5a/1000g/1kgp_scn5a_2Mb.vcf.gz \
   | bcftools query -f '%POS\t%REF\t%ALT[\t%GT]\n' | sed 's/|/\t/g' &gt; results/kgp_eur_window.tsv
-wc -l results/kgp_eur_window.tsv</code></pre>
-<div class="callout check"><div class="co-t">Check</div><p>About <b>503</b> unrelated Europeans, and roughly <b>3,300</b> SNPs in the 160-kb window.</p></div>
-<div class="tryrow"><button class="do" type="button" data-stage-nb="r|stage05-ld|Stage 5 – LD and the block">Open my stage 5 notebook</button></div>
-<p>In R, build the two-SNP haplotype in this group and correlate every SNP with it:</p>
-<pre class="code" data-run="r"><code>w &lt;- read.delim("~/project/results/kgp_eur_window.tsv", header = FALSE, na.strings = ".")
-pos &lt;- w$V1; alt &lt;- w$V3
-G &lt;- as.matrix(w[, -(1:3)])                    # SNPs x haplotypes
-a &lt;- G[pos == 38651526 &amp; alt == "A", ]
-b &lt;- G[pos == 38650537 &amp; alt == "G", ]
-both &lt;- as.integer(a == 1 &amp; b == 1)            # the two-SNP haplotype, in Europeans
-mean(both)                                      # its frequency here
-r2 &lt;- apply(G, 1, function(x) suppressWarnings(cor(x, both, use = "complete.obs"))^2)</code></pre>
-<p><code>apply(G, 1, …)</code> runs the correlation for every row (SNP). Now find the block – the SNPs in high LD with the haplotype:</p>
-<pre class="code" data-run="r"><code>block &lt;- pos[!is.na(r2) &amp; r2 >= 0.8]
-length(block)                                   # how many SNPs
-range(block)                                    # the block's edges
-(max(block) - min(block)) / 1000                # its width in kb</code></pre>
-<div class="callout check"><div class="co-t">Check</div><p>In Europeans the two variants have r² = <b>1.0</b> with each other (the two-SNP haplotype is at ~16% here). Around <b>20</b> SNPs reach r² ≥ 0.8 with the haplotype, spanning <b>chr3:38,631,501–38,682,101</b> – a block of about <b>50 kb</b>. This is the larger haplotype your project set out to find. It runs from inside <i>SCN5A</i>, across the promoter, into the gap before <i>SCN10A</i>.</p></div>
+wc -l results/eur.txt results/kgp_eur_window.tsv</code></pre>
+<pre class="code" data-run="r"><code>e &lt;- read.delim("~/project/results/kgp_eur_window.tsv", header = FALSE, na.strings = ".")
+epos &lt;- e$V1; ealt &lt;- e$V3; E &lt;- as.matrix(e[, -(1:3)])
+ea &lt;- E[epos == 38651526 &amp; ealt == "A", ]; eb &lt;- E[epos == 38650537 &amp; ealt == "G", ]
+eboth &lt;- as.integer(ea == 1 &amp; eb == 1)
+cor(ea, eb, use = "complete.obs")^2                   # r^2 between the two variants, in Europeans
+er2 &lt;- apply(E, 1, function(x) suppressWarnings(cor(x, eboth, use = "complete.obs"))^2)
+eblock &lt;- epos[!is.na(er2) &amp; er2 >= 0.8]
+length(eblock); range(eblock); (max(eblock) - min(eblock)) / 1000
+write.csv(data.frame(pos = epos, alt = ealt, r2 = er2), "~/project/results/ld_eur.csv", row.names = FALSE)</code></pre>
+<div class="callout check"><div class="co-t">Check</div><p>In Europeans the two variants have r² = <b>1.0</b> with each other, and about <b>20</b> SNPs reach r² ≥ 0.8 with the haplotype, spanning <b>chr3:38,631,501–38,682,101 (~50.6 kb)</b>. The 1000 Genomes data <b>confirm the pangenome block</b> and sharpen its edges: same upper boundary near <i>SCN10A</i>, a cleaner lower edge inside <i>SCN5A</i>. Two methods, two very different datasets, one block.</p></div>
 
-<h2>3. Picture the block</h2>
+<h2>5. Picture the block</h2>
 <pre class="code" data-run="r"><code>png("~/project/figures/fig_ld_block.png", width = 1600, height = 800, res = 150)
-plot(pos / 1e6, r2, pch = 20, cex = 0.6, col = ifelse(!is.na(r2) &amp; r2 >= 0.8, "#c2410c", "grey70"),
+plot(epos / 1e6, er2, pch = 20, cex = 0.6, col = ifelse(!is.na(er2) &amp; er2 >= 0.8, "#c2410c", "grey70"),
      xlab = "chr3 position (Mb, GRCh38)", ylab = expression(r^2 ~ "with the two-SNP haplotype (EUR)"),
      main = "The extended SCN5A promoter haplotype block")
 abline(v = c(38651526, 38650537) / 1e6, lty = 3, col = "blue")
 rect(38548057/1e6, -0.04, 38649743/1e6, -0.01, col = "grey40", border = NA); text(38.60, 0.03, "SCN5A", cex = 0.8)
 dev.off()</code></pre>
-<p>Save the block for later stages:</p>
-<pre class="code" data-run="r"><code>write.csv(data.frame(pos = pos, alt = alt, r2 = r2), "~/project/results/ld_eur.csv", row.names = FALSE)</code></pre>
 
 <div class="callout think"><div class="co-t">Think</div>
 <ul>
-<li>How far does the block reach above the TSS, towards <i>SCN10A</i>? Does it reach <i>SCN10A</i> itself?</li>
-<li>The block includes variants inside <i>SCN5A</i> (introns) and in the <i>SCN5A</i>–<i>SCN10A</i> gap. Why might that gap matter for a gene? (Stage 7 looks at what regulatory elements are there.)</li>
-<li>Pooled across all populations the r² between the two variants was only 0.70, but within Europeans it is 1.0. What does that tell you about comparing LD across populations? (Stage 6.)</li>
+<li>The pangenome (31.6 kb, pooled) and the 1000G Europeans (50.6 kb) give slightly different block sizes. How much of that is the pangenome's smaller sample, and how much is pooling populations together? (Stage 6 helps.)</li>
+<li>Two indels are in the block. Would a study that used only SNP arrays or short reads have found them? What might you miss by ignoring them?</li>
+<li>How far does the block reach toward <i>SCN10A</i>, and does it get there? (Stage 7 looks at what is in the gap.)</li>
 </ul></div>
 
 <div class="callout log"><div class="co-t">For your logbook</div>
 <ul>
-<li>What r² and D′ mean, and the r² between the two variants (pooled and in Europeans).</li>
-<li>The block's edges and width, and which genes it covers. <b>This is a key result of your project.</b></li>
-<li>Your figure of r² along the region.</li>
+<li>What r² and D′ mean, and the r² between the two variants (pangenome and Europeans).</li>
+<li>The block from the pangenome (size, variants, the two indels) and from 1000 Genomes (size, edges). <b>This is a key result of your project.</b></li>
+<li>The carrier/non-carrier sequence through the repeat, and why it needed the pangenome.</li>
+<li>Your figure.</li>
 </ul></div>
 
 <h2>Going further</h2>
 <ul>
-<li>Work out D′ as well as r² for the two variants (D′ stays high even when frequencies differ). Why is D′ the better measure of whether one allele sits only on the other's background?</li>
-<li>PLINK 2 computes LD directly: try <code>plink2 --vcf … --r2-unphased</code> on the window and compare with your R result (see <a href="#h-plink2">PLINK 2</a>).</li>
-<li>Lower the threshold to r² ≥ 0.5: how much wider is the block? Where would you honestly draw its edge?</li>
+<li>Work out D′ as well as r² for the two variants. Why is D′ the better measure of whether one allele sits only on the other's background?</li>
+<li>Define the pangenome block <i>within</i> Europeans only (join <code>hprc_samples.tsv</code> and keep the EUR haplotypes). Does it match the 1000G EUR block more closely than the pooled one did?</li>
+<li>PLINK 2 computes LD directly: try <code>plink2 --vcf … --r2-unphased</code> on the window and compare (see <a href="#h-plink2">PLINK 2</a>).</li>
+<li>Look at the two block indels in the genome browser, on the pangenome track. What are they – where do they sit?</li>
 </ul>
 <ul class="checklist">
-<li data-check="s5-ld2">I measured the r² between the two variants.</li>
-<li data-check="s5-window">I extracted every SNP in the window for unrelated Europeans.</li>
-<li data-check="s5-r2">I correlated every SNP with the two-SNP haplotype.</li>
-<li data-check="s5-block">I found the ~50 kb block and its edges.</li>
+<li data-check="s5-ld2">I measured the r² between the two variants in the phased pangenome haplotypes.</li>
+<li data-check="s5-pangenome">I defined the block from the pangenome – indels and all – and found the two indels in it.</li>
+<li data-check="s5-consensus">I rebuilt a carrier's promoter sequence through the repeat with <code>bcftools consensus</code>.</li>
+<li data-check="s5-1000g">I confirmed and sharpened the block in the 1000 Genomes Europeans.</li>
 <li data-check="s5-fig">I drew the figure of r² along the region.</li>
 <li data-check="s5-log">I wrote this stage up in my logbook.</li>
 </ul>
